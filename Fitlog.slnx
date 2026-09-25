@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Fitlog.Tests/Fitlog.Tests.csproj" />
+  <Project Path="Fitlog/Fitlog.csproj" />
+</Solution>
