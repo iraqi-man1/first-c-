@@ -2,6 +2,28 @@
 
 تطبيق Desktop لتتبع اللياقة مكتوب بـ **C# / Avalonia UI** مع قاعدة بيانات **SQLite** محلية. التصميم مستوحى من الصور المرفقة؛ يدعم الإنكليزية والعربية مع اتجاه من اليمين لليسار. التطبيق نافذة Desktop فعلية، ولا يستخدم متصفحاً أو WebView.
 
+> A native C# and Avalonia fitness tracker for daily attendance, custom workout schedules, weight progress, and photo albums. Your data stays in a local SQLite database.
+
+## صور التطبيق / Screenshots
+
+الصور التالية من واجهات التطبيق الفعلية. البيانات المعروضة تجريبية للاختبار؛ صورة المقارنة تستخدم اللوكو المولّد كصورة مثال فقط.
+
+| Dashboard | الجدول الأسبوعي |
+|---|---|
+| ![Fitness dashboard](docs/screenshots/dashboard.png) | ![Custom workout schedule](docs/screenshots/workout-schedule.png) |
+
+| Calendar | Weight progress |
+|---|---|
+| ![Monthly workout calendar](docs/screenshots/calendar.png) | ![Weight progress chart](docs/screenshots/weight.png) |
+
+| English settings | الإعدادات بالعربية |
+|---|---|
+| ![English preferences and theme controls](docs/screenshots/settings.png) | ![Arabic RTL settings](docs/screenshots/arabic-settings.png) |
+
+| لوحة المتابعة بالعربية | Photo comparison |
+|---|---|
+| ![Arabic dashboard](docs/screenshots/arabic-dashboard.png) | ![Progress photo comparison with generated test-image data](docs/screenshots/photo-comparison.png) |
+
 ## التحديث الأخير
 
 - ساعة محلية مباشرة تتحدث كل ثانية، مع تحديث اليوم والتقويم عند منتصف الليل أو تغيير وقت الجهاز؛ بدون إعادة تشغيل.
@@ -15,15 +37,7 @@
 
 ## التشغيل على Windows
 
-النسخة الجاهزة بعد النشر:
-
-```text
-artifacts/win-x64/Fitlog.exe
-```
-
-هذه نسخة مستقلة تحتوي على .NET Runtime. شغّل الملف مباشرة. أول تشغيل يبدأ بقاعدة بيانات فارغة، من دون بيانات تجريبية.
-
-للتشغيل من المصدر:
+شغّل التطبيق من المصدر:
 
 ```powershell
 .\run.ps1
