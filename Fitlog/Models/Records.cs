@@ -33,7 +33,11 @@ public sealed record ProgressPhoto(string Id, DateOnly Date, string Caption, str
     public string? AlbumId { get; set; }
 }
 public sealed record PhotoAlbum(string Id, string Title, DateOnly Date);
-public sealed record PlannedExercise(string Name, int Sets, string Reps, double WeightKg, int RestSeconds);
+public sealed record PlannedExercise(string Name, int Sets, string Reps, double WeightKg, int RestSeconds)
+{
+    public string Id { get; init; } = Guid.NewGuid().ToString("N");
+}
+public sealed record ExerciseLoadEntry(string ExerciseId, string ExerciseName, DateOnly? Date, double WeightKg);
 public sealed record WorkoutRoutine
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -43,9 +47,15 @@ public sealed record WorkoutRoutine
     public List<DayOfWeek> Days { get; set; } = [];
     public string Notes { get; set; } = "";
     public List<PlannedExercise> Exercises { get; set; } = [];
+    public List<ExerciseLoadEntry> LoadHistory { get; set; } = [];
 }
 public enum MealUnit { Grams, Tablespoons }
-public sealed record PlannedMeal(string Name, TimeOnly Time, double Amount, MealUnit Unit);
+public sealed record MealIngredient(string Name, double Amount, MealUnit Unit);
+public sealed record PlannedMeal(string Name, TimeOnly Time, double Amount, MealUnit Unit)
+{
+    public List<MealIngredient> Ingredients { get; init; } = [];
+    [JsonIgnore] public IReadOnlyList<MealIngredient> EffectiveIngredients => Ingredients.Count > 0 ? Ingredients : [new(Name, Amount, Unit)];
+}
 public sealed record NutritionPlan
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");

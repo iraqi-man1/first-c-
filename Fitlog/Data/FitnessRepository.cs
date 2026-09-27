@@ -110,13 +110,36 @@ public sealed class FitnessRepository
             Goal x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Title) && x.Unit != null && double.IsFinite(x.Target) && x.Target > 0 && double.IsFinite(x.Current) && x.Current >= 0,
             ProgressPhoto x => !string.IsNullOrWhiteSpace(x.Id) && x.Date != default && x.Caption != null && ValidPhoto(x.Base64),
             PhotoAlbum x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Title) && x.Title.Length <= 100 && x.Date != default,
-            WorkoutRoutine x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Title) && x.Title.Length <= 100 && !string.IsNullOrWhiteSpace(x.ProgramName) && x.ProgramName.Length <= 100 && (x.CreatedOn == null || x.CreatedOn.Value != default(DateOnly)) && x.Notes != null && x.Days != null && x.Days.All(Enum.IsDefined) && x.Exercises != null && x.Exercises.Count is > 0 and <= 100 && x.Exercises.All(e => e != null && !string.IsNullOrWhiteSpace(e.Name) && e.Name.Length <= 100 && e.Sets is >= 1 and <= 50 && !string.IsNullOrWhiteSpace(e.Reps) && e.Reps.Length <= 30 && e.WeightKg is >= 0 and <= 1000 && e.RestSeconds is >= 0 and <= 3600),
-            NutritionPlan x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.CourseName) && x.CourseName.Length <= 100 && x.CreatedOn != default && x.Meals != null && x.Meals.Count is > 0 and <= 30 && x.Meals.All(m => m != null && !string.IsNullOrWhiteSpace(m.Name) && m.Name.Length <= 100 && m.Amount is > 0 and <= 10000 && double.IsFinite(m.Amount) && Enum.IsDefined(m.Unit)),
+            WorkoutRoutine x => ValidRoutine(x),
+            NutritionPlan x => ValidNutrition(x),
             Preferences x => x.Language is "en" or "ar" && x.WeeklyGoal is >= 1 and <= 7 && x.MonthlyGoal is >= 1 and <= 31 && x.TargetWeight is >= 20 and <= 500 && x.DietGoal is >= 1 and <= 100 && new[] { "Overall", "Gym", "Diet", "Weight logging" }.Contains(x.Heatmap),
             _ => false
         };
         if (!valid) throw new InvalidDataException($"Invalid {kind} values. Check the entered ranges.");
     }
+    private static bool ValidRoutine(WorkoutRoutine x) =>
+        !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Title) && x.Title.Length <= 100 &&
+        !string.IsNullOrWhiteSpace(x.ProgramName) && x.ProgramName.Length <= 100 &&
+        (x.CreatedOn == null || x.CreatedOn.Value != default) && x.Notes != null &&
+        x.Days != null && x.Days.All(Enum.IsDefined) && x.Exercises is { Count: > 0 and <= 100 } &&
+        x.Exercises.All(e => e != null && !string.IsNullOrWhiteSpace(e.Id) && !string.IsNullOrWhiteSpace(e.Name) &&
+            e.Name.Length <= 100 && e.Sets is >= 1 and <= 50 && !string.IsNullOrWhiteSpace(e.Reps) &&
+            e.Reps.Length <= 30 && double.IsFinite(e.WeightKg) && e.WeightKg is >= 0 and <= 1000 &&
+            e.RestSeconds is >= 0 and <= 3600) &&
+        x.Exercises.Select(e => e.Id).Distinct().Count() == x.Exercises.Count &&
+        x.LoadHistory is { Count: <= 1000 } && x.LoadHistory.All(h => h != null &&
+            !string.IsNullOrWhiteSpace(h.ExerciseId) && !string.IsNullOrWhiteSpace(h.ExerciseName) &&
+            h.ExerciseName.Length <= 100 && (h.Date == null || h.Date.Value != default) &&
+            double.IsFinite(h.WeightKg) && h.WeightKg is > 0 and <= 1000);
+
+    private static bool ValidNutrition(NutritionPlan x) =>
+        !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.CourseName) && x.CourseName.Length <= 100 &&
+        x.CreatedOn != default && x.Meals is { Count: > 0 and <= 30 } &&
+        x.Meals.All(m => m != null && !string.IsNullOrWhiteSpace(m.Name) && m.Name.Length <= 100 &&
+            m.Amount is > 0 and <= 10000 && double.IsFinite(m.Amount) && Enum.IsDefined(m.Unit) &&
+            m.Ingredients is { Count: <= 30 } && m.EffectiveIngredients.All(i => i != null &&
+                !string.IsNullOrWhiteSpace(i.Name) && i.Name.Length <= 100 &&
+                double.IsFinite(i.Amount) && i.Amount is > 0 and <= 10000 && Enum.IsDefined(i.Unit)));
     public void SavePhotos(IEnumerable<ProgressPhoto> photos)
     {
         var items = photos.ToList(); foreach (var photo in items) Validate("photo", photo);

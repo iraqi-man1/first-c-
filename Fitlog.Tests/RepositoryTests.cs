@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Fitlog.Data;
 using Fitlog.Models;
 using Xunit;
@@ -95,13 +96,42 @@ public sealed class RepositoryTests
         var plan = new NutritionPlan { Id = "food", CourseName = "Cutting", CreatedOn = day, Meals = [new("Breakfast", new TimeOnly(8, 30), 120, MealUnit.Grams), new("Honey", new TimeOnly(11, 0), 2, MealUnit.Tablespoons)] };
         repo.Save("nutrition", plan.Id, plan);
         repo.Save("routine", "push", new WorkoutRoutine { Id = "push", CreatedOn = day, Title = "Push", Exercises = [new("Bench", 3, "8", 60, 90)] });
-        var restored = NewRepository(); restored.Import(repo.Export());
+        var legacyBackup = JsonNode.Parse(repo.Export())!;
+        foreach (var meal in legacyBackup["NutritionPlans"]![0]!["Meals"]!.AsArray()) meal!.AsObject().Remove("Ingredients");
+        var oldRoutine = legacyBackup["Routines"]![0]!;
+        oldRoutine.AsObject().Remove("LoadHistory");
+        oldRoutine["Exercises"]![0]!.AsObject().Remove("Id");
+        var restored = NewRepository(); restored.Import(legacyBackup.ToJsonString());
         var food = Assert.Single(restored.Snapshot().NutritionPlans);
         Assert.Equal(day, food.CreatedOn); Assert.Equal(2, food.Meals.Count); Assert.Equal(MealUnit.Tablespoons, food.Meals[1].Unit);
-        Assert.Equal(day, Assert.Single(restored.Snapshot().Routines).CreatedOn);
+        Assert.Equal("Breakfast", Assert.Single(food.Meals[0].EffectiveIngredients).Name);
+        var legacyRoutine = Assert.Single(restored.Snapshot().Routines);
+        Assert.Equal(day, legacyRoutine.CreatedOn); Assert.False(string.IsNullOrWhiteSpace(Assert.Single(legacyRoutine.Exercises).Id));
         restored.Save("nutrition", food.Id, food with { CourseName = "Updated" });
         Assert.Equal(day, Assert.Single(restored.Snapshot().NutritionPlans).CreatedOn);
         Assert.Throws<InvalidDataException>(() => restored.Save("nutrition", "bad", plan with { Meals = [new("", new TimeOnly(8, 0), 0, MealUnit.Grams)] }));
+    }
+    [Fact]
+    public void MultiItemMealsAndExerciseLoadChangesSurviveBackup()
+    {
+        var repo = NewRepository(); var start = new DateOnly(2026, 9, 25); var later = start.AddDays(10);
+        var breakfast = new PlannedMeal("Breakfast", new TimeOnly(8, 0), 80, MealUnit.Grams)
+        {
+            Ingredients = [new("Oats", 80, MealUnit.Grams), new("Honey", 2, MealUnit.Tablespoons)]
+        };
+        repo.Save("nutrition", "food", new NutritionPlan { Id = "food", CourseName = "Daily", CreatedOn = start, Meals = [breakfast] });
+        var bench = new PlannedExercise("Bench", 3, "8", 60, 90);
+        var first = new WorkoutRoutine { Id = "push", CreatedOn = start, Title = "Push", Exercises = [bench], LoadHistory = ExerciseProgress.RecordChanges(null, [bench], start) };
+        repo.Save("routine", first.Id, first);
+        var heavier = bench with { WeightKg = 66 };
+        repo.Save("routine", first.Id, first with { Exercises = [heavier], LoadHistory = ExerciseProgress.RecordChanges(first, [heavier], later) });
+        var restored = NewRepository(); restored.Import(repo.Export());
+        var meal = Assert.Single(Assert.Single(restored.Snapshot().NutritionPlans).Meals);
+        Assert.Equal(2, meal.EffectiveIngredients.Count); Assert.Equal("Honey", meal.EffectiveIngredients[1].Name);
+        var change = Assert.Single(ExerciseProgress.Changes(Assert.Single(restored.Snapshot().Routines)));
+        Assert.Equal(10, change.Days); Assert.Equal(10, change.Percent, 3);
+        Assert.Single(new PlannedMeal("Oats", new TimeOnly(8, 0), 80, MealUnit.Grams).EffectiveIngredients);
+        Assert.Throws<InvalidDataException>(() => repo.Save("nutrition", "bad", new NutritionPlan { CourseName = "Bad", CreatedOn = start, Meals = [breakfast with { Ingredients = [new("", 1, MealUnit.Grams)] }] }));
     }
     [Fact]
     public void InvalidPhotoBatchAndInvalidCompletionDoNotPartiallyWrite()

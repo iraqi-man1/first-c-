@@ -72,12 +72,13 @@ public sealed partial class MainWindow
             if (editors.Count == 0) throw new InvalidDataException("Add at least one exercise.");
             var items = editors.Select(x => x.Read(this)).ToList();
             var id = routine?.Id ?? Guid.NewGuid().ToString("N");
-            _repository.Save("routine", id, new WorkoutRoutine { Id = id, CreatedOn = routine == null ? Today : routine.CreatedOn, ProgramName = program.Text.Trim(), Title = title.Text.Trim(), Days = selectedDays, Notes = notes.Text?.Trim() ?? "", Exercises = items });
+            _repository.Save("routine", id, new WorkoutRoutine { Id = id, CreatedOn = routine == null ? Today : routine.CreatedOn, ProgramName = program.Text.Trim(), Title = title.Text.Trim(), Days = selectedDays, Notes = notes.Text?.Trim() ?? "", Exercises = items, LoadHistory = ExerciseProgress.RecordChanges(routine, items, Today) });
         });
         await dialog.ShowDialog(this);
     }
     private sealed class ExerciseEditor
     {
+        private readonly string _id;
         public TextBox Name { get; }
         public TextBox Reps { get; }
         public NumericUpDown Sets { get; }
@@ -85,14 +86,15 @@ public sealed partial class MainWindow
         public NumericUpDown Rest { get; }
         public ExerciseEditor(MainWindow owner, PlannedExercise? exercise)
         {
+            _id = exercise?.Id ?? Guid.NewGuid().ToString("N");
             Name = new TextBox { Text = exercise?.Name ?? "", MaxLength = 100, Name = "ExerciseName" };
             Reps = new TextBox { Text = exercise?.Reps ?? "8–12", MaxLength = 30, Name = "ExerciseReps" };
-            Sets = Number(exercise?.Sets ?? 3, 1, 50); Weight = Number(owner.DisplayWeight(exercise?.WeightKg ?? 0), 0, owner.DisplayWeight(1000), .5); Rest = Number(exercise?.RestSeconds ?? 90, 0, 3600, 15);
+            Sets = Number(exercise?.Sets ?? 3, 1, 50); Weight = Number(owner.DisplayWeight(exercise?.WeightKg ?? 0), 0, owner.DisplayWeight(1000), .5); Weight.Name = "ExerciseWeight"; Rest = Number(exercise?.RestSeconds ?? 90, 0, 3600, 15);
         }
         public PlannedExercise Read(MainWindow owner)
         {
             if (string.IsNullOrWhiteSpace(Name.Text) || string.IsNullOrWhiteSpace(Reps.Text)) throw new InvalidDataException("Enter an exercise name and rep range.");
-            return new(Name.Text.Trim(), (int)Value(Sets), Reps.Text.Trim(), owner.ToKg(Value(Weight)), (int)Value(Rest));
+            return new PlannedExercise(Name.Text.Trim(), (int)Value(Sets), Reps.Text.Trim(), owner.ToKg(Value(Weight)), (int)Value(Rest)) { Id = _id };
         }
     }
 }

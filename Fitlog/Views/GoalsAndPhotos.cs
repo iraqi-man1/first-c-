@@ -14,6 +14,21 @@ public sealed partial class MainWindow
         var page = Stack(UiMetrics.Xl); page.Children.Add(Split(Heading("Keep moving forward", "Goals & records", "Set your own milestones and celebrate your progress."), Button("＋  Add goal", () => EditGoal(), true)));
         var start = Metrics.WeekStart(Today, Pref.SundayFirst); var weekly = _data.Logs.Count(x => x.Trained && x.Date >= start && x.Date <= Today);
         page.Children.Add(Columns(Stat("Target weight", Weight(Pref.TargetWeight)), Stat("Weekly gym goal", $"{weekly} / {Pref.WeeklyGoal}"), Stat("Current streak", L($"{Metrics.Streak(_data.Logs, Today)} days", $"{Metrics.Streak(_data.Logs, Today)} أيام"))));
+        var loadChanges = _data.Routines.SelectMany(r => ExerciseProgress.Changes(r).Select(change => (Routine: r, Change: change))).OrderByDescending(x => x.Change.Date).ToList();
+        var strength = Stack(UiMetrics.Md);
+        strength.Children.Add(T("Exercise load progress", 21, true));
+        strength.Children.Add(T("Changes saved when you edit an exercise load in your workout schedule.", 13, color: Muted));
+        if (loadChanges.Count == 0) strength.Children.Add(T("No load changes yet. Update an exercise weight in Workouts to start tracking.", 13, color: Muted));
+        foreach (var (routine, change) in loadChanges)
+        {
+            var detail = Stack(4);
+            detail.Children.Add(T($"{change.ExerciseName}  ·  {routine.Title}", 15, true));
+            var duration = change.Days is { } days ? days == 0 ? Tr("Same day") : $"{days} {Tr(days == 1 ? "day" : "days")}" : Tr("Time not recorded");
+            detail.Children.Add(T($"{Weight(change.PreviousKg)} → {Weight(change.CurrentKg)}   ·   {duration}   ·   {(change.Date is { } date ? DateText(date, "dd MMM yyyy") : Tr("Date not recorded"))}", 12, color: Muted));
+            var percentage = T($"{change.Percent:+0.#;-0.#;0}%", 20, true, change.Percent > 0 ? Accent : Muted);
+            strength.Children.Add(new Border { Background = InputSurface, CornerRadius = new(UiMetrics.ControlRadius), Padding = new Thickness(UiMetrics.Lg, UiMetrics.Md), Child = Split(detail, percentage) });
+        }
+        page.Children.Add(Card(strength));
         if (_data.Goals.Count == 0) page.Children.Add(Empty("Make it personal", "Set a strength, distance, or consistency goal and update your progress as you go.", "Add your first goal", () => EditGoal()));
         foreach (var goal in _data.Goals)
         {

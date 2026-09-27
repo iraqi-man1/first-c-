@@ -90,15 +90,22 @@ public sealed class UiTests
     [AvaloniaFact]
     public void CustomWorkoutScheduleCanBeCreatedAndEditedIndependentlyOfCheckIns()
     {
-        var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
+        var repo = RepositoryTests.NewRepository(); var clock = new TestClock(new DateTimeOffset(2026, 9, 25, 9, 0, 0, TimeSpan.Zero)); var window = new MainWindow(repo, clock); window.Show(); Dispatcher.UIThread.RunJobs();
         Click(Named<Button>(window, "NavWorkouts")); Click(Named<Button>(window, "AddWorkoutRoutine")); var dialog = Assert.Single(window.OwnedWindows);
         Named<TextBox>(dialog, "RoutineProgram").Text = "Upper / Lower"; Named<TextBox>(dialog, "RoutineTitle").Text = "Push day"; Named<TextBox>(dialog, "ExerciseName").Text = "Bench press";
+        Named<NumericUpDown>(dialog, "ExerciseWeight").Value = 60;
         Click(Named<Button>(dialog, "AddExercise")); dialog.GetVisualDescendants().OfType<TextBox>().Where(x => x.Name == "ExerciseName").Last().Text = "Shoulder press";
         Capture(dialog, "workout-editor"); Click(Named<Button>(dialog, "SaveEntry"));
         var routine = Assert.Single(repo.Snapshot().Routines); Assert.Equal("Upper / Lower", routine.ProgramName); Assert.Equal(2, routine.Exercises.Count); Assert.Empty(repo.Snapshot().Logs); Capture(window, "workout-schedule");
+        clock.Utc = new DateTimeOffset(2026, 10, 5, 9, 0, 0, TimeSpan.Zero);
         Click(Named<Button>(window, "EditRoutine")); dialog = Assert.Single(window.OwnedWindows); Named<TextBox>(dialog, "RoutineTitle").Text = "Upper body";
-        Click(dialog.GetVisualDescendants().OfType<Button>().First(x => x.Name == "RemoveExercise")); Click(Named<Button>(dialog, "SaveEntry"));
+        Click(dialog.GetVisualDescendants().OfType<Button>().Last(x => x.Name == "RemoveExercise"));
+        Named<NumericUpDown>(dialog, "ExerciseWeight").Value = 66; Click(Named<Button>(dialog, "SaveEntry"));
         routine = Assert.Single(repo.Snapshot().Routines); Assert.Equal("Upper body", routine.Title); Assert.Single(routine.Exercises);
+        var change = Assert.Single(ExerciseProgress.Changes(routine)); Assert.Equal(10, change.Days); Assert.Equal(10, change.Percent, 3);
+        Click(Named<Button>(window, "NavGoalsRecords"));
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), x => x.Text?.Contains("+10%") == true);
+        Capture(window, "goals-strength-progress");
         Click(Named<Button>(window, "LogToday")); dialog = Assert.Single(window.OwnedWindows);
         Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Training; Named<ComboBox>(dialog, "LogRoutine").SelectedIndex = 1;
         Click(Named<Button>(dialog, "SaveEntry")); Assert.Empty(repo.Snapshot().Logs);
@@ -115,21 +122,27 @@ public sealed class UiTests
         Click(Named<Button>(window, "NavNutrition")); Click(Named<Button>(window, "AddNutritionPlan"));
         var dialog = Assert.Single(window.OwnedWindows);
         Named<TextBox>(dialog, "NutritionCourse").Text = "Daily course";
-        Named<TextBox>(dialog, "MealName").Text = "Oats";
+        Named<TextBox>(dialog, "MealName").Text = "Breakfast";
+        Named<TextBox>(dialog, "IngredientName").Text = "Oats";
         Named<TextBox>(dialog, "MealTime").Text = "07:30";
         Named<NumericUpDown>(dialog, "MealAmount").Value = 80;
+        Click(Named<Button>(dialog, "AddIngredient"));
+        dialog.GetVisualDescendants().OfType<TextBox>().Where(x => x.Name == "IngredientName").Last().Text = "Milk";
+        dialog.GetVisualDescendants().OfType<NumericUpDown>().Where(x => x.Name == "MealAmount").Last().Value = 200;
         Named<NumericUpDown>(dialog, "MealCount").Value = 2;
         Assert.Equal(2, dialog.GetVisualDescendants().OfType<TextBox>().Count(x => x.Name == "MealName"));
         Named<NumericUpDown>(dialog, "MealCount").Value = 1;
         Assert.Single(dialog.GetVisualDescendants().OfType<TextBox>(), x => x.Name == "MealName");
         Click(Named<Button>(dialog, "AddMeal"));
-        dialog.GetVisualDescendants().OfType<TextBox>().Where(x => x.Name == "MealName").Last().Text = "Honey";
+        dialog.GetVisualDescendants().OfType<TextBox>().Where(x => x.Name == "MealName").Last().Text = "Snack";
+        dialog.GetVisualDescendants().OfType<TextBox>().Where(x => x.Name == "IngredientName").Last().Text = "Honey";
         dialog.GetVisualDescendants().OfType<TextBox>().Where(x => x.Name == "MealTime").Last().Text = "12:00";
         dialog.GetVisualDescendants().OfType<ComboBox>().Where(x => x.Name == "MealUnit").Last().SelectedIndex = 1;
         dialog.GetVisualDescendants().OfType<NumericUpDown>().Where(x => x.Name == "MealAmount").Last().Value = 2;
         Capture(dialog, "nutrition-editor"); Click(Named<Button>(dialog, "SaveEntry"));
         var plan = Assert.Single(repo.Snapshot().NutritionPlans);
         Assert.Equal(new DateOnly(2026, 9, 25), plan.CreatedOn); Assert.Equal(2, plan.Meals.Count);
+        Assert.Equal(2, plan.Meals[0].Ingredients.Count); Assert.Equal("Milk", plan.Meals[0].Ingredients[1].Name);
         Assert.Equal(MealUnit.Tablespoons, plan.Meals[1].Unit);
         Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), x => x.Text?.Contains("25 Sep 2026") == true);
         Capture(window, "nutrition-schedule");
@@ -142,7 +155,8 @@ public sealed class UiTests
         Click(window.GetVisualDescendants().OfType<Button>().Single(x => x.Content is string s && s == "العربية"));
         Click(Named<Button>(window, "NavNutrition"));
         Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), x => x.Text?.Contains("غرام") == true);
-        window.Width = 900; window.Height = 700; Click(Named<Button>(window, "NavNutrition")); Capture(window, "nutrition-arabic-compact");
+        window.Close(); window = new MainWindow(repo, clock) { Width = 900, Height = 700 }; window.Show(); Dispatcher.UIThread.RunJobs();
+        Click(Named<Button>(window, "NavNutrition")); Capture(window, "nutrition-arabic-compact");
         Click(Named<Button>(window, "EditNutritionPlan")); dialog = Assert.Single(window.OwnedWindows);
         Capture(dialog, "nutrition-editor-arabic"); dialog.Close();
         window.Close();

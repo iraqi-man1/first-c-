@@ -341,5 +341,20 @@ public sealed partial class MainWindow
         This is not a complete fitlog backup.|هذا الملف ليس نسخة احتياطية كاملة من fitlog.
         Unsupported or incomplete backup.|نسخة احتياطية غير مدعومة أو غير مكتملة.
         A photo refers to a missing album.|هناك صورة مرتبطة بألبوم غير موجود.
+        Exercise load progress|تطوّر أوزان التمارين
+        Changes saved when you edit an exercise load in your workout schedule.|تُحفظ تغيّرات وزن كل تمرين عند تعديل جدول التمارين.
+        No load changes yet. Update an exercise weight in Workouts to start tracking.|ماكو تغيير بالأوزان بعد. حدّث وزن تمرين من جدول التمارين حتى يبدأ التتبع.
+        Same day|نفس اليوم
+        day|يوم
+        days|أيام
+        Time not recorded|المدة غير مسجّلة
+        Date not recorded|التاريخ غير مسجّل
+        Meal name|اسم الوجبة
+        e.g. Breakfast|مثلاً: الفطور
+        Food items|مواد الوجبة
+        Food item|المادة الغذائية
+        Add food item|إضافة مادة غذائية
+        e.g. Oats|مثلاً: شوفان
+        Enter a name for every food item.|أدخل اسم كل مادة غذائية.
         """.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.Trim().Split('|', 2)).ToDictionary(parts => parts[0], parts => parts[1], StringComparer.OrdinalIgnoreCase);
 }
