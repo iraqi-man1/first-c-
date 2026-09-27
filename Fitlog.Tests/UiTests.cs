@@ -31,7 +31,7 @@ public sealed class UiTests
     {
         var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
         Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows);
-        Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Training; Named<NumericUpDown>(dialog, "DietCompletion").Value = 100;
+        Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Training; Named<ComboBox>(dialog, "DietCompletion").SelectedIndex = 4;
         Named<TextBox>(dialog, "WorkoutName").Text = "Upper body"; Named<TextBox>(dialog, "DailyNotes").Text = "Feeling strong";
         Capture(dialog, "check-in"); Click(Named<Button>(dialog, "SaveEntry"));
         var saved = Assert.Single(repo.Snapshot().Logs); Assert.True(saved.Gym); Assert.True(saved.Diet); Assert.Equal("Feeling strong", saved.Notes);
@@ -66,8 +66,8 @@ public sealed class UiTests
         Assert.Contains("01 Oct", Named<TextBlock>(window, "LocalClock").Text);
         Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows);
         Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Rest;
-        Named<NumericUpDown>(dialog, "DietCompletion").Value = 65; Click(Named<Button>(dialog, "SaveEntry"));
-        var log = Assert.Single(repo.Snapshot().Logs); Assert.Equal(new DateOnly(2026, 10, 1), log.Date); Assert.Equal(Attendance.Rest, log.EffectiveStatus); Assert.False(log.Trained); Assert.Null(log.EffectiveWorkoutCompletion); Assert.Equal(65, log.EffectiveDietCompletion); window.Close();
+        Named<ComboBox>(dialog, "DietCompletion").SelectedIndex = 3; Click(Named<Button>(dialog, "SaveEntry"));
+        var log = Assert.Single(repo.Snapshot().Logs); Assert.Equal(new DateOnly(2026, 10, 1), log.Date); Assert.Equal(Attendance.Rest, log.EffectiveStatus); Assert.False(log.Trained); Assert.Null(log.EffectiveWorkoutCompletion); Assert.Equal(75, log.EffectiveDietCompletion); window.Close();
     }
     [AvaloniaFact]
     public void TrainingRestAndMissedAreDistinctAndCompletionIsPersisted()
@@ -76,10 +76,15 @@ public sealed class UiTests
         foreach (var status in new[] { Attendance.Training, Attendance.Rest, Attendance.Missed })
         {
             Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows); Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)status;
-            Named<NumericUpDown>(dialog, "WorkoutCompletion").Value = 75; Named<NumericUpDown>(dialog, "DietCompletion").Value = 80;
+            Named<NumericUpDown>(dialog, "WorkoutCompletion").Value = 75; Named<ComboBox>(dialog, "DietCompletion").SelectedIndex = 3;
             Click(Named<Button>(dialog, "SaveEntry")); var log = Assert.Single(repo.Snapshot().Logs); Assert.Equal(status, log.EffectiveStatus);
-            Assert.Equal(status == Attendance.Training ? 75 : status == Attendance.Missed ? 0 : (int?)null, log.EffectiveWorkoutCompletion); Assert.Equal(80, log.EffectiveDietCompletion);
+            Assert.Equal(status == Attendance.Training ? 75 : status == Attendance.Missed ? 0 : (int?)null, log.EffectiveWorkoutCompletion); Assert.Equal(75, log.EffectiveDietCompletion);
         }
+        var prior = repo.Snapshot().Logs.Single(); repo.Save("log", prior.Date.ToString("yyyy-MM-dd"), prior with { DietCompletion = 85 });
+        window.Close(); window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
+        Click(Named<Button>(window, "LogToday")); var legacy = Assert.Single(window.OwnedWindows);
+        Assert.Equal("85%", ((ComboBoxItem)Named<ComboBox>(legacy, "DietCompletion").SelectedItem!).Content); Click(Named<Button>(legacy, "SaveEntry"));
+        Assert.Equal(85, Assert.Single(repo.Snapshot().Logs).EffectiveDietCompletion);
         window.Close();
     }
     [AvaloniaFact]
@@ -87,20 +92,67 @@ public sealed class UiTests
     {
         var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
         Click(Named<Button>(window, "NavWorkouts")); Click(Named<Button>(window, "AddWorkoutRoutine")); var dialog = Assert.Single(window.OwnedWindows);
-        Named<TextBox>(dialog, "RoutineTitle").Text = "Push day"; Named<TextBox>(dialog, "ExerciseName").Text = "Bench press";
+        Named<TextBox>(dialog, "RoutineProgram").Text = "Upper / Lower"; Named<TextBox>(dialog, "RoutineTitle").Text = "Push day"; Named<TextBox>(dialog, "ExerciseName").Text = "Bench press";
         Click(Named<Button>(dialog, "AddExercise")); dialog.GetVisualDescendants().OfType<TextBox>().Where(x => x.Name == "ExerciseName").Last().Text = "Shoulder press";
         Capture(dialog, "workout-editor"); Click(Named<Button>(dialog, "SaveEntry"));
-        var routine = Assert.Single(repo.Snapshot().Routines); Assert.Equal(2, routine.Exercises.Count); Assert.Empty(repo.Snapshot().Logs); Capture(window, "workout-schedule");
+        var routine = Assert.Single(repo.Snapshot().Routines); Assert.Equal("Upper / Lower", routine.ProgramName); Assert.Equal(2, routine.Exercises.Count); Assert.Empty(repo.Snapshot().Logs); Capture(window, "workout-schedule");
         Click(Named<Button>(window, "EditRoutine")); dialog = Assert.Single(window.OwnedWindows); Named<TextBox>(dialog, "RoutineTitle").Text = "Upper body";
         Click(dialog.GetVisualDescendants().OfType<Button>().First(x => x.Name == "RemoveExercise")); Click(Named<Button>(dialog, "SaveEntry"));
-        routine = Assert.Single(repo.Snapshot().Routines); Assert.Equal("Upper body", routine.Title); Assert.Single(routine.Exercises); window.Close();
+        routine = Assert.Single(repo.Snapshot().Routines); Assert.Equal("Upper body", routine.Title); Assert.Single(routine.Exercises);
+        Click(Named<Button>(window, "LogToday")); dialog = Assert.Single(window.OwnedWindows);
+        Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Training; Named<ComboBox>(dialog, "LogRoutine").SelectedIndex = 1;
+        Click(Named<Button>(dialog, "SaveEntry")); Assert.Empty(repo.Snapshot().Logs);
+        Assert.Single(dialog.GetVisualDescendants().OfType<CheckBox>(), x => x.Name == "PerformedExercise").IsChecked = true;
+        Click(Named<Button>(dialog, "SaveEntry")); var log = Assert.Single(repo.Snapshot().Logs);
+        Assert.Equal(routine.Id, log.RoutineId); Assert.Equal(routine.Exercises[0].Name, Assert.Single(log.PerformedExercises)); window.Close();
+    }
+    [AvaloniaFact]
+    public void NutritionCourseCanBeCreatedEditedAndDisplayedWithItsCreationDate()
+    {
+        var repo = RepositoryTests.NewRepository();
+        var clock = new TestClock(new DateTimeOffset(2026, 9, 25, 9, 0, 0, TimeSpan.Zero));
+        var window = new MainWindow(repo, clock); window.Show(); Dispatcher.UIThread.RunJobs();
+        Click(Named<Button>(window, "NavNutrition")); Click(Named<Button>(window, "AddNutritionPlan"));
+        var dialog = Assert.Single(window.OwnedWindows);
+        Named<TextBox>(dialog, "NutritionCourse").Text = "Daily course";
+        Named<TextBox>(dialog, "MealName").Text = "Oats";
+        Named<TextBox>(dialog, "MealTime").Text = "07:30";
+        Named<NumericUpDown>(dialog, "MealAmount").Value = 80;
+        Named<NumericUpDown>(dialog, "MealCount").Value = 2;
+        Assert.Equal(2, dialog.GetVisualDescendants().OfType<TextBox>().Count(x => x.Name == "MealName"));
+        Named<NumericUpDown>(dialog, "MealCount").Value = 1;
+        Assert.Single(dialog.GetVisualDescendants().OfType<TextBox>(), x => x.Name == "MealName");
+        Click(Named<Button>(dialog, "AddMeal"));
+        dialog.GetVisualDescendants().OfType<TextBox>().Where(x => x.Name == "MealName").Last().Text = "Honey";
+        dialog.GetVisualDescendants().OfType<TextBox>().Where(x => x.Name == "MealTime").Last().Text = "12:00";
+        dialog.GetVisualDescendants().OfType<ComboBox>().Where(x => x.Name == "MealUnit").Last().SelectedIndex = 1;
+        dialog.GetVisualDescendants().OfType<NumericUpDown>().Where(x => x.Name == "MealAmount").Last().Value = 2;
+        Capture(dialog, "nutrition-editor"); Click(Named<Button>(dialog, "SaveEntry"));
+        var plan = Assert.Single(repo.Snapshot().NutritionPlans);
+        Assert.Equal(new DateOnly(2026, 9, 25), plan.CreatedOn); Assert.Equal(2, plan.Meals.Count);
+        Assert.Equal(MealUnit.Tablespoons, plan.Meals[1].Unit);
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), x => x.Text?.Contains("25 Sep 2026") == true);
+        Capture(window, "nutrition-schedule");
+        Click(Named<Button>(window, "EditNutritionPlan")); dialog = Assert.Single(window.OwnedWindows);
+        Named<TextBox>(dialog, "NutritionCourse").Text = "Updated course";
+        Click(Named<Button>(dialog, "SaveEntry"));
+        Assert.Equal("Updated course", Assert.Single(repo.Snapshot().NutritionPlans).CourseName);
+        Assert.Equal(new DateOnly(2026, 9, 25), Assert.Single(repo.Snapshot().NutritionPlans).CreatedOn);
+        Click(Named<Button>(window, "NavSettings"));
+        Click(window.GetVisualDescendants().OfType<Button>().Single(x => x.Content is string s && s == "العربية"));
+        Click(Named<Button>(window, "NavNutrition"));
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), x => x.Text?.Contains("غرام") == true);
+        window.Width = 900; window.Height = 700; Click(Named<Button>(window, "NavNutrition")); Capture(window, "nutrition-arabic-compact");
+        Click(Named<Button>(window, "EditNutritionPlan")); dialog = Assert.Single(window.OwnedWindows);
+        Capture(dialog, "nutrition-editor-arabic"); dialog.Close();
+        window.Close();
     }
     [AvaloniaFact]
     public void ArabicRtlPersistsAndAllPagesRenderWithTheNewTheme()
     {
         var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
         Click(Named<Button>(window, "NavSettings")); Click(window.GetVisualDescendants().OfType<Button>().Single(x => x.Content is string s && s == "العربية"));
-        Assert.Equal("ar", repo.Snapshot().Preferences.Language); Assert.Equal(Avalonia.Media.FlowDirection.RightToLeft, window.FlowDirection); Assert.Equal(SystemDecorations.None, window.SystemDecorations);
+        Assert.Equal("ar", repo.Snapshot().Preferences.Language); Assert.Equal(Avalonia.Media.FlowDirection.RightToLeft, window.FlowDirection); Assert.Equal(SystemDecorations.Full, window.SystemDecorations);
         foreach (var page in new[] { "Settings", "Dashboard", "Calendar", "Workouts", "Weight", "Measurements", "ProgressPhotos", "GoalsRecords", "Journey", "Statistics" })
         {
             Click(Named<Button>(window, "Nav" + page)); Capture(window, "arabic-" + page.ToLowerInvariant()); Assert.Empty(window.OwnedWindows);
@@ -121,9 +173,12 @@ public sealed class UiTests
         Assert.Equal(2, repo.Snapshot().Photos.Count); Assert.All(repo.Snapshot().Photos, photo => Assert.Equal("album", photo.AlbumId));
         Assert.All(window.GetVisualDescendants().OfType<Image>(), image => Assert.Equal(Avalonia.Media.FlowDirection.LeftToRight, image.FlowDirection)); Capture(window, "photo-album-arabic");
         foreach (var check in window.GetVisualDescendants().OfType<CheckBox>().Where(x => x.Name == "SelectPhoto").ToList()) check.IsChecked = true;
-        Click(Named<Button>(window, "ComparePhotos")); dialog = Assert.Single(window.OwnedWindows); Assert.Equal(2, dialog.GetVisualDescendants().OfType<Image>().Count(x => x.Name == "ComparisonImage")); Capture(dialog, "photo-comparison"); dialog.Close(); Dispatcher.UIThread.RunJobs();
+        Click(Named<Button>(window, "ComparePhotos")); dialog = Assert.Single(window.OwnedWindows); Assert.Equal(2, dialog.GetVisualDescendants().OfType<Image>().Count(x => x.Name == "ComparisonImage")); Named<ComboBox>(dialog, "ComparisonMode").SelectedIndex = 1; Named<Slider>(dialog, "ComparisonSlider").Value = 75; Capture(dialog, "photo-comparison"); dialog.Close(); Dispatcher.UIThread.RunJobs();
         Click(window.GetVisualDescendants().OfType<Button>().First(x => x.Name == "OpenPhoto")); dialog = Assert.Single(window.OwnedWindows);
-        var picture = Named<Image>(dialog, "FullPhoto"); var width = picture.Width; Named<Slider>(dialog, "PhotoZoom").Value = 2; Dispatcher.UIThread.RunJobs(); Assert.True(picture.Width > width); Capture(dialog, "photo-zoom"); dialog.Close(); window.Close();
+        var picture = Named<Image>(dialog, "FullPhoto"); var width = picture.Width; Named<Slider>(dialog, "PhotoZoom").Value = 2; Dispatcher.UIThread.RunJobs(); Assert.True(picture.Width > width); Capture(dialog, "photo-zoom"); dialog.Close(); Dispatcher.UIThread.RunJobs();
+        Click(Named<Button>(window, "DeleteAlbum")); dialog = Assert.Single(window.OwnedWindows);
+        Click(dialog.GetVisualDescendants().OfType<Button>().Single(x => x.Content is string s && s == "حذف"));
+        Assert.Empty(repo.Snapshot().Albums); Assert.Equal(2, repo.Snapshot().Photos.Count); Assert.All(repo.Snapshot().Photos, photo => Assert.Null(photo.AlbumId)); window.Close();
     }
     private sealed class TestClock(DateTimeOffset utc) : TimeProvider
     {
@@ -145,7 +200,11 @@ public sealed class UiTests
         {
             Click(Named<Button>(window, "Nav" + page)); Capture(window, page.ToLowerInvariant()); Assert.Empty(window.OwnedWindows);
         }
-        window.Width = 1000; window.Height = 720; Click(Named<Button>(window, "NavDashboard")); Capture(window, "dashboard-compact");
+        window.Width = 900; window.Height = 700;
+        foreach (var page in new[] { "Dashboard", "Calendar", "Weight", "Workouts", "Measurements", "ProgressPhotos", "GoalsRecords", "Journey", "Statistics", "Settings" })
+        {
+            Click(Named<Button>(window, "Nav" + page)); Capture(window, page.ToLowerInvariant() + "-compact"); Assert.Empty(window.OwnedWindows);
+        }
         Click(Named<Button>(window, "NavSettings")); var light = window.GetVisualDescendants().OfType<Button>().Single(x => x.Content is string s && s == "Light"); Click(light); Assert.True(repo.Snapshot().Preferences.Light); Capture(window, "settings-light");
         window.Close();
     }

@@ -76,6 +76,34 @@ public sealed class RepositoryTests
         target.Delete("routine", "plan"); Assert.Single(target.Snapshot().Logs);
     }
     [Fact]
+    public void ProgramAndPerformedExercisesRoundTripAndAlbumDeletionKeepsPhotos()
+    {
+        var repo = NewRepository(); var day = new DateOnly(2026, 9, 25);
+        repo.Save("routine", "upper", new WorkoutRoutine { Id = "upper", ProgramName = "Upper / Lower", Title = "Upper", Exercises = [new("Bench", 3, "8", 60, 90)] });
+        repo.Save("log", day.ToString("yyyy-MM-dd"), new DailyLog { Date = day, Status = Attendance.Training, Gym = true, RoutineId = "upper", Workout = "Upper", PerformedExercises = ["Bench"], DietCompletion = 75 });
+        repo.Save("album", "album", new PhotoAlbum("album", "Progress", day));
+        repo.Save("photo", "photo", new ProgressPhoto("photo", day, "", "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aXioAAAAASUVORK5CYII=") { AlbumId = "album" });
+        var restored = NewRepository(); restored.Import(repo.Export());
+        Assert.Equal("Upper / Lower", Assert.Single(restored.Snapshot().Routines).ProgramName);
+        Assert.Equal("Bench", Assert.Single(restored.Snapshot().Logs).PerformedExercises.Single());
+        restored.DeleteAlbum("album"); Assert.Empty(restored.Snapshot().Albums); Assert.Null(Assert.Single(restored.Snapshot().Photos).AlbumId);
+    }
+    [Fact]
+    public void NutritionCourseAndWorkoutCreationDatesSurviveBackupAndEditing()
+    {
+        var repo = NewRepository(); var day = new DateOnly(2026, 9, 25);
+        var plan = new NutritionPlan { Id = "food", CourseName = "Cutting", CreatedOn = day, Meals = [new("Breakfast", new TimeOnly(8, 30), 120, MealUnit.Grams), new("Honey", new TimeOnly(11, 0), 2, MealUnit.Tablespoons)] };
+        repo.Save("nutrition", plan.Id, plan);
+        repo.Save("routine", "push", new WorkoutRoutine { Id = "push", CreatedOn = day, Title = "Push", Exercises = [new("Bench", 3, "8", 60, 90)] });
+        var restored = NewRepository(); restored.Import(repo.Export());
+        var food = Assert.Single(restored.Snapshot().NutritionPlans);
+        Assert.Equal(day, food.CreatedOn); Assert.Equal(2, food.Meals.Count); Assert.Equal(MealUnit.Tablespoons, food.Meals[1].Unit);
+        Assert.Equal(day, Assert.Single(restored.Snapshot().Routines).CreatedOn);
+        restored.Save("nutrition", food.Id, food with { CourseName = "Updated" });
+        Assert.Equal(day, Assert.Single(restored.Snapshot().NutritionPlans).CreatedOn);
+        Assert.Throws<InvalidDataException>(() => restored.Save("nutrition", "bad", plan with { Meals = [new("", new TimeOnly(8, 0), 0, MealUnit.Grams)] }));
+    }
+    [Fact]
     public void InvalidPhotoBatchAndInvalidCompletionDoNotPartiallyWrite()
     {
         var repo = NewRepository(); var day = new DateOnly(2026, 9, 25);

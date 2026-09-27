@@ -32,6 +32,7 @@ public sealed partial class MainWindow
         Dashboard|لوحة المتابعة
         Calendar|التقويم
         Workouts|جدول التمارين
+        Nutrition|الغذاء
         Weight|الوزن
         Measurements|القياسات
         Progress Photos|صور التقدم
@@ -41,6 +42,10 @@ public sealed partial class MainWindow
         Settings|الإعدادات
         Saved on this device|محفوظ على هذا الجهاز
         Open a date|اختر تاريخاً
+        Custom workout|تمرين مخصص
+        Workout day from your plan|يوم التمرين من جدولك
+        Exercises completed|التمارين التي تمرنتها
+        Choose at least one completed exercise.|اختر تمريناً واحداً على الأقل من التمارين التي أنجزتها.
         Switch appearance|تغيير المظهر
         Log Today|سجّل اليوم
         Saved to your device|تم الحفظ على جهازك
@@ -225,7 +230,17 @@ public sealed partial class MainWindow
         YOUR PLAN|خطتك
         Workout schedule|جدول التمارين
         Your weekly plan and custom exercises. Record attendance from Log Today.|جدولك الأسبوعي وتمارينك المخصصة. سجّل حضورك من زر سجّل اليوم.
+        Create a program with workout days, then choose the day and exercises when you check in.|أنشئ نظاماً بأيام التمرين، ثم اختر اليوم والتمارين المنفذة عند التسجيل.
+        Name your program and add a workout day with its exercises.|سمِّ نظام التمرين وأضف يوماً مع تمارينه.
+        Program name|اسم نظام التمرين
+        e.g. Upper / Lower|مثلاً: Upper / Lower
+        Existing programs|الأنظمة الموجودة
+        Choose on check-in|يُختار عند تسجيل اليوم
+        Repeat on (optional)|يتكرر في (اختياري)
+        Enter a program name.|أدخل اسم نظام التمرين.
+        Program name is too long.|اسم نظام التمرين طويل جداً.
         Add workout day|إضافة يوم تمرين
+        Add day to program|إضافة يوم للنظام
         Create your training plan|أنشئ جدول تمارينك
         Add a workout, choose its weekdays, and list the exercises you follow.|أضف جلسة وحدد أيامها والتمارين التي تلتزم بها.
         Workout name|اسم الجلسة
@@ -241,6 +256,35 @@ public sealed partial class MainWindow
         Schedule notes|ملاحظات الجدول
         Edit workout|تعديل الجلسة
         Scheduled today|مقرر اليوم
+        Created on|أُنشئ في
+        Creation date not recorded|تاريخ الإنشاء غير مسجّل
+        Food schedule|جدول الغذاء
+        Your nutrition courses|برامجك الغذائية
+        Plan your meals, times and portions in one place.|نظّم وجباتك وأوقاتها وكمياتها بمكان واحد.
+        Add food course|إضافة برنامج غذائي
+        Start a food course|ابدأ برنامجاً غذائياً
+        Name your course, then add each meal with its time and portion.|سمِّ برنامجك، ثم أضف كل وجبة مع وقتها وكميتها.
+        Edit food course|تعديل البرنامج الغذائي
+        Create a food course|إنشاء برنامج غذائي
+        Add meals in the order that works for your day.|أضف الوجبات بالترتيب المناسب ليومك.
+        Course name|اسم البرنامج الغذائي
+        Number of meals|عدد الوجبات
+        e.g. My daily course|مثلاً: برنامجي اليومي
+        Meals|وجبات
+        Meal|وجبة
+        Meal / food|اسم الوجبة أو الطعام
+        e.g. Oats and milk|مثلاً: شوفان وحليب
+        Time · 24h|الوقت · ٢٤ ساعة
+        Amount|الكمية
+        Unit|الوحدة
+        g|غرام
+        tbsp|ملعقة كبيرة
+        Add meal|إضافة وجبة
+        Remove meal|إزالة الوجبة
+        Enter a course name.|أدخل اسم البرنامج الغذائي.
+        Add at least one meal.|أضف وجبة واحدة على الأقل.
+        Enter a name for every meal.|أدخل اسماً لكل وجبة.
+        Enter a meal time as HH:mm.|أدخل وقت الوجبة بصيغة 08:00.
         Add at least one exercise.|أضف تمريناً واحداً على الأقل.
         Choose at least one weekday.|اختر يوماً واحداً على الأقل.
         Enter a workout name.|أدخل اسم الجلسة.
@@ -284,6 +328,13 @@ public sealed partial class MainWindow
         Please choose images smaller than 10 MB each.|اختر صوراً أصغر من ١٠ ميغابايت لكل صورة.
         This photo could not be displayed.|تعذّر عرض هذه الصورة.
         Enter an album name.|أدخل اسم الألبوم.
+        Delete album|حذف الألبوم
+        Delete album?|حذف الألبوم؟
+        The album will be deleted. Its photos will remain in All photos.|سيُحذف الألبوم وتبقى صوره ضمن كل الصور.
+        Album deleted|تم حذف الألبوم
+        Side by side|جنباً إلى جنب
+        Slider|شريط تمرير
+        View|طريقة العرض
         Enter all numeric values before saving.|أدخل كل القيم الرقمية قبل الحفظ.
         Choose a date on or before today.|اختر تاريخ اليوم أو يوماً سابقاً.
         This backup is too large (maximum 150 MB).|حجم النسخة كبير جداً (الحد الأقصى ١٥٠ ميغابايت).

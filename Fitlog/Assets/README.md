@@ -1,6 +1,6 @@
 # Fitlog logo
 
-Asset: `fitlog-logo.png`, embedded in the application and used in the sidebar and native window icon.
+Asset: `fitlog-logo.png`, embedded in the application and used in the sidebar. `fitlog.ico` is generated from it by `scripts/Generate-Icon.ps1` and is used by the executable, native windows, shortcuts, and installer.
 
 Generated using the built-in `image_gen` tool, 2026-09-26. The original PNG is preserved, including its generated alpha channel. No external image service or CLI was used.
 

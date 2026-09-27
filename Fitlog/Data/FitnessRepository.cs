@@ -56,10 +56,19 @@ public sealed class FitnessRepository
         cmd.CommandText = "DELETE FROM records WHERE kind=$kind AND id=$id";
         cmd.Parameters.AddWithValue("$kind", kind); cmd.Parameters.AddWithValue("$id", id); cmd.ExecuteNonQuery();
     }
+    public void DeleteAlbum(string id)
+    {
+        var photos = Read<ProgressPhoto>("photo").Where(x => x.AlbumId == id).ToList();
+        using var db = Open(); using var tx = db.BeginTransaction();
+        foreach (var photo in photos) Put(db, tx, "photo", photo.Id, photo with { AlbumId = null });
+        using var cmd = db.CreateCommand(); cmd.Transaction = tx;
+        cmd.CommandText = "DELETE FROM records WHERE kind='album' AND id=$id";
+        cmd.Parameters.AddWithValue("$id", id); cmd.ExecuteNonQuery(); tx.Commit();
+    }
     public Backup Snapshot() => new()
     {
         Logs = Read<DailyLog>("log"), Weights = Read<WeightEntry>("weight"), Measurements = Read<Measurement>("measurement"),
-        Goals = Read<Goal>("goal"), Photos = Read<ProgressPhoto>("photo"), Albums = Read<PhotoAlbum>("album"), Routines = Read<WorkoutRoutine>("routine"), Preferences = Read<Preferences>("preferences").FirstOrDefault() ?? new()
+        Goals = Read<Goal>("goal"), Photos = Read<ProgressPhoto>("photo"), Albums = Read<PhotoAlbum>("album"), Routines = Read<WorkoutRoutine>("routine"), NutritionPlans = Read<NutritionPlan>("nutrition"), Preferences = Read<Preferences>("preferences").FirstOrDefault() ?? new()
     };
     public string Export() => JsonSerializer.Serialize(Snapshot(), JsonOptions);
     public void Import(string json)
@@ -68,7 +77,7 @@ public sealed class FitnessRepository
         if (document.RootElement.ValueKind != JsonValueKind.Object || new[] { "Version", "Logs", "Weights", "Measurements", "Goals", "Photos", "Preferences" }.Any(key => !document.RootElement.TryGetProperty(key, out _)))
             throw new InvalidDataException("This is not a complete fitlog backup.");
         var data = JsonSerializer.Deserialize<Backup>(json) ?? throw new InvalidDataException("This backup is empty.");
-        if (data.Version is not (1 or 2) || data.Logs == null || data.Weights == null || data.Measurements == null || data.Goals == null || data.Photos == null || data.Albums == null || data.Routines == null || data.Preferences == null)
+        if (data.Version is not (1 or 2) || data.Logs == null || data.Weights == null || data.Measurements == null || data.Goals == null || data.Photos == null || data.Albums == null || data.Routines == null || data.NutritionPlans == null || data.Preferences == null)
             throw new InvalidDataException("Unsupported or incomplete backup.");
         foreach (var x in data.Logs) Validate("log", x);
         foreach (var x in data.Weights) Validate("weight", x);
@@ -77,6 +86,7 @@ public sealed class FitnessRepository
         foreach (var x in data.Photos) Validate("photo", x);
         foreach (var x in data.Albums) Validate("album", x);
         foreach (var x in data.Routines) Validate("routine", x);
+        foreach (var x in data.NutritionPlans) Validate("nutrition", x);
         if (data.Photos.Any(x => x.AlbumId != null && !data.Albums.Any(a => a.Id == x.AlbumId))) throw new InvalidDataException("A photo refers to a missing album.");
         Validate("preferences", data.Preferences);
         using var db = Open(); using var tx = db.BeginTransaction();
@@ -87,19 +97,21 @@ public sealed class FitnessRepository
         foreach (var x in data.Photos) Put(db, tx, "photo", x.Id, x);
         foreach (var x in data.Albums) Put(db, tx, "album", x.Id, x);
         foreach (var x in data.Routines) Put(db, tx, "routine", x.Id, x);
+        foreach (var x in data.NutritionPlans) Put(db, tx, "nutrition", x.Id, x);
         Put(db, tx, "preferences", "main", data.Preferences); tx.Commit();
     }
     private static void Validate<T>(string kind, T value)
     {
         bool valid = value switch
         {
-            DailyLog x => x.Date != default && (x.Status == null || Enum.IsDefined(x.Status.Value)) && (x.WorkoutCompletion == null || x.WorkoutCompletion is >= 0 and <= 100) && (x.DietCompletion == null || x.DietCompletion is >= 0 and <= 100) && x.Minutes is >= 0 and <= 1440 && x.Steps is >= 0 and <= 200000 && x.Water is >= 0 and <= 30 && x.Sleep is >= 0 and <= 24 && x.Energy is >= 1 and <= 5 && x.Notes != null && x.Workout != null,
+            DailyLog x => x.Date != default && (x.Status == null || Enum.IsDefined(x.Status.Value)) && (x.WorkoutCompletion == null || x.WorkoutCompletion is >= 0 and <= 100) && (x.DietCompletion == null || x.DietCompletion is >= 0 and <= 100) && x.Minutes is >= 0 and <= 1440 && x.Steps is >= 0 and <= 200000 && x.Water is >= 0 and <= 30 && x.Sleep is >= 0 and <= 24 && x.Energy is >= 1 and <= 5 && x.Notes != null && x.Workout != null && x.PerformedExercises != null && x.PerformedExercises.All(name => !string.IsNullOrWhiteSpace(name) && name.Length <= 100),
             WeightEntry x => x.Date != default && double.IsFinite(x.Kilograms) && x.Kilograms is >= 20 and <= 500,
             Measurement x => x.Date != default && x.Waist is > 0 and <= 500 && x.Chest is > 0 and <= 500 && x.Hips is > 0 and <= 500,
             Goal x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Title) && x.Unit != null && double.IsFinite(x.Target) && x.Target > 0 && double.IsFinite(x.Current) && x.Current >= 0,
             ProgressPhoto x => !string.IsNullOrWhiteSpace(x.Id) && x.Date != default && x.Caption != null && ValidPhoto(x.Base64),
             PhotoAlbum x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Title) && x.Title.Length <= 100 && x.Date != default,
-            WorkoutRoutine x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Title) && x.Title.Length <= 100 && x.Notes != null && x.Days != null && x.Days.Count > 0 && x.Days.All(Enum.IsDefined) && x.Exercises != null && x.Exercises.Count is > 0 and <= 100 && x.Exercises.All(e => e != null && !string.IsNullOrWhiteSpace(e.Name) && e.Name.Length <= 100 && e.Sets is >= 1 and <= 50 && !string.IsNullOrWhiteSpace(e.Reps) && e.Reps.Length <= 30 && e.WeightKg is >= 0 and <= 1000 && e.RestSeconds is >= 0 and <= 3600),
+            WorkoutRoutine x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Title) && x.Title.Length <= 100 && !string.IsNullOrWhiteSpace(x.ProgramName) && x.ProgramName.Length <= 100 && (x.CreatedOn == null || x.CreatedOn.Value != default(DateOnly)) && x.Notes != null && x.Days != null && x.Days.All(Enum.IsDefined) && x.Exercises != null && x.Exercises.Count is > 0 and <= 100 && x.Exercises.All(e => e != null && !string.IsNullOrWhiteSpace(e.Name) && e.Name.Length <= 100 && e.Sets is >= 1 and <= 50 && !string.IsNullOrWhiteSpace(e.Reps) && e.Reps.Length <= 30 && e.WeightKg is >= 0 and <= 1000 && e.RestSeconds is >= 0 and <= 3600),
+            NutritionPlan x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.CourseName) && x.CourseName.Length <= 100 && x.CreatedOn != default && x.Meals != null && x.Meals.Count is > 0 and <= 30 && x.Meals.All(m => m != null && !string.IsNullOrWhiteSpace(m.Name) && m.Name.Length <= 100 && m.Amount is > 0 and <= 10000 && double.IsFinite(m.Amount) && Enum.IsDefined(m.Unit)),
             Preferences x => x.Language is "en" or "ar" && x.WeeklyGoal is >= 1 and <= 7 && x.MonthlyGoal is >= 1 and <= 31 && x.TargetWeight is >= 20 and <= 500 && x.DietGoal is >= 1 and <= 100 && new[] { "Overall", "Gym", "Diet", "Weight logging" }.Contains(x.Heatmap),
             _ => false
         };

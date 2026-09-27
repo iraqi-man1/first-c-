@@ -16,6 +16,8 @@ public sealed record DailyLog
     [JsonIgnore] public int EffectiveDietCompletion => DietCompletion ?? (Diet ? 100 : 0);
     [JsonIgnore] public int? EffectiveWorkoutCompletion => Trained ? WorkoutCompletion ?? 100 : EffectiveStatus == Attendance.Missed ? 0 : null;
     public string Workout { get; set; } = "";
+    public string? RoutineId { get; set; }
+    public List<string> PerformedExercises { get; set; } = [];
     public int Minutes { get; set; }
     public int Steps { get; set; }
     public double Water { get; set; }
@@ -35,10 +37,21 @@ public sealed record PlannedExercise(string Name, int Sets, string Reps, double 
 public sealed record WorkoutRoutine
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public DateOnly? CreatedOn { get; set; }
+    public string ProgramName { get; set; } = "My plan";
     public string Title { get; set; } = "";
     public List<DayOfWeek> Days { get; set; } = [];
     public string Notes { get; set; } = "";
     public List<PlannedExercise> Exercises { get; set; } = [];
+}
+public enum MealUnit { Grams, Tablespoons }
+public sealed record PlannedMeal(string Name, TimeOnly Time, double Amount, MealUnit Unit);
+public sealed record NutritionPlan
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string CourseName { get; set; } = "";
+    public DateOnly CreatedOn { get; set; }
+    public List<PlannedMeal> Meals { get; set; } = [];
 }
 public sealed record Preferences
 {
@@ -67,5 +80,6 @@ public sealed record Backup
     public List<ProgressPhoto> Photos { get; set; } = [];
     public List<PhotoAlbum> Albums { get; set; } = [];
     public List<WorkoutRoutine> Routines { get; set; } = [];
+    public List<NutritionPlan> NutritionPlans { get; set; } = [];
     public Preferences Preferences { get; set; } = new();
 }

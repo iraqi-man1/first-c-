@@ -3,37 +3,37 @@
     <ResourceDictionary>
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="TextControlBackground" Color="#24333E" />
-          <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#24333E" />
-          <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#2B3D4A" />
-          <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#24333E" />
+          <SolidColorBrush x:Key="TextControlBackground" Color="#15232D" />
+          <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#15232D" />
+          <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#1D2D38" />
+          <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#15232D" />
           <SolidColorBrush x:Key="TextControlBorderBrush" Color="#3A5261" />
           <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#A3C5D5" />
           <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#A3C5D5" />
           <SolidColorBrush x:Key="TextControlForeground" Color="#F0F4F7" />
           <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#F0F4F7" />
           <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#F0F4F7" />
-          <SolidColorBrush x:Key="ComboBoxBackground" Color="#24333E" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#2B3D4A" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#2B3D4A" />
+          <SolidColorBrush x:Key="ComboBoxBackground" Color="#15232D" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#1D2D38" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#1D2D38" />
           <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#3A5261" />
           <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#A3C5D5" />
           <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#A3C5D5" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="TextControlBackground" Color="#E6EDF1" />
-          <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#E6EDF1" />
-          <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#DCE7ED" />
-          <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#E6EDF1" />
+          <SolidColorBrush x:Key="TextControlBackground" Color="#F3F6F8" />
+          <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#F3F6F8" />
+          <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#EAF0F3" />
+          <SolidColorBrush x:Key="TextControlBackgroundDisabled" Color="#F3F6F8" />
           <SolidColorBrush x:Key="TextControlBorderBrush" Color="#B8CBD5" />
           <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#548AA4" />
           <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#548AA4" />
           <SolidColorBrush x:Key="TextControlForeground" Color="#1B303D" />
           <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#1B303D" />
           <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#1B303D" />
-          <SolidColorBrush x:Key="ComboBoxBackground" Color="#E6EDF1" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#DCE7ED" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#DCE7ED" />
+          <SolidColorBrush x:Key="ComboBoxBackground" Color="#F3F6F8" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#EAF0F3" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#EAF0F3" />
           <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#B8CBD5" />
           <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#548AA4" />
           <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#548AA4" />
@@ -49,11 +49,15 @@
       </FluentTheme.Palettes>
     </FluentTheme>
     <Style Selector="Window"><Setter Property="FontFamily" Value="avares://Avalonia.Fonts.Inter/Assets#Inter"/><Setter Property="FontSize" Value="14"/></Style>
-    <Style Selector="Button"><Setter Property="CornerRadius" Value="10"/><Setter Property="Padding" Value="14,10"/><Setter Property="Cursor" Value="Hand"/><Setter Property="FontSize" Value="14"/></Style>
-    <Style Selector="TextBox"><Setter Property="CornerRadius" Value="10"/><Setter Property="MinHeight" Value="42"/></Style>
-    <Style Selector="NumericUpDown"><Setter Property="CornerRadius" Value="10"/><Setter Property="MinHeight" Value="42"/></Style>
-    <Style Selector="ComboBox"><Setter Property="CornerRadius" Value="10"/><Setter Property="MinHeight" Value="42"/></Style>
-    <Style Selector="Button.nav"><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Height" Value="44"/></Style>
+    <Style Selector="Button"><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="16,8"/><Setter Property="MinHeight" Value="40"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="Cursor" Value="Hand"/><Setter Property="FontSize" Value="14"/></Style>
+    <Style Selector="TextBox"><Setter Property="CornerRadius" Value="10"/><Setter Property="MinHeight" Value="46"/><Setter Property="Padding" Value="14,10"/><Setter Property="BorderThickness" Value="1"/></Style>
+    <Style Selector="NumericUpDown"><Setter Property="CornerRadius" Value="10"/><Setter Property="MinHeight" Value="46"/><Setter Property="BorderThickness" Value="1"/></Style>
+    <Style Selector="ComboBox"><Setter Property="CornerRadius" Value="10"/><Setter Property="MinHeight" Value="46"/><Setter Property="Padding" Value="14,9"/><Setter Property="BorderThickness" Value="1"/></Style>
+    <Style Selector="ComboBoxItem"><Setter Property="MinHeight" Value="40"/><Setter Property="Padding" Value="14,8"/></Style>
+    <Style Selector="CalendarDatePicker"><Setter Property="CornerRadius" Value="10"/><Setter Property="MinHeight" Value="46"/><Setter Property="BorderThickness" Value="1"/></Style>
+    <Style Selector="Button.nav"><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Height" Value="44"/><Setter Property="Padding" Value="12,8"/></Style>
+    <Style Selector="Button.icon"><Setter Property="Width" Value="40"/><Setter Property="Height" Value="40"/><Setter Property="Padding" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
+    <Style Selector="Button.heatcell"><Setter Property="MinHeight" Value="0"/><Setter Property="Padding" Value="0"/><Setter Property="CornerRadius" Value="3"/></Style>
     <Style Selector="Button.primary"><Setter Property="Background" Value="#A3C5D5"/><Setter Property="Foreground" Value="#14232E"/><Setter Property="FontWeight" Value="Medium"/></Style>
     <Style Selector="Button.primary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#BEDBE8"/><Setter Property="Foreground" Value="#14232E"/></Style>
   </Application.Styles>
