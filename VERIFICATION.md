@@ -3,10 +3,10 @@
 Verified on Windows x64, 2026-09-27.
 
 - .NET 10.0.401 SDK; Avalonia 11.3.22; Microsoft.Data.Sqlite 10.0.12.
-- `scripts/Build-Release.ps1`: **17 tests passed, 0 failed**; self-contained Windows x64 publication and Inno Setup compilation succeeded.
-- Launched both the published and installed executables; each remained running with a native window titled `fitlog — Your fitness, day by day` and closed cleanly.
-- The application and installer report version 1.0.0 and Fitlog product metadata. The ICO contains 16, 24, 32, 48, 64, 128, and 256 px images.
-- Silently installed the Setup.exe to an isolated directory, checked executable, Start Menu and optional desktop shortcuts, and the per-user Installed apps registry entry. Re-ran Setup.exe as an upgrade, launched the installed app, then uninstalled it. The executable, shortcuts, and registry entry were removed.
+- Published the 1.1.0 application as a self-contained Windows x64 executable and compiled its installer with Inno Setup 6.7.3.
+- Silently upgraded the installed 1.0.0 application in place. The Add/Remove Programs entry now reports 1.1.0, the installed executable reports file version 1.1.0.0, and the user's database remains present.
+- Launched the installed 1.1.0 executable; it created a native window titled `fitlog — Your fitness, day by day` and remained responsive.
+- The installer includes a Fitlog-branded welcome image, English and Arabic wizard messages, optional desktop shortcut, Start Menu shortcut, and update link. The ICO contains 16, 24, 32, 48, 64, 128, and 256 px images.
 
 ## Tested behavior
 
