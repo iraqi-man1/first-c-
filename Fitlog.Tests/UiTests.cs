@@ -5,6 +5,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Fitlog.Controls;
 using Fitlog.Models;
 using Xunit;
 
@@ -31,7 +32,7 @@ public sealed class UiTests
     {
         var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
         Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows);
-        Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Training; Named<ComboBox>(dialog, "DietCompletion").SelectedIndex = 4;
+        Named<ChoiceBar>(dialog, "DayStatus").Choose(Attendance.Training); Named<ChoiceBar>(dialog, "DietCompletion").Choose(100);
         Named<TextBox>(dialog, "WorkoutName").Text = "Upper body"; Named<TextBox>(dialog, "DailyNotes").Text = "Feeling strong";
         Capture(dialog, "check-in"); Click(Named<Button>(dialog, "SaveEntry"));
         var saved = Assert.Single(repo.Snapshot().Logs); Assert.True(saved.Gym); Assert.True(saved.Diet); Assert.Equal("Feeling strong", saved.Notes);
@@ -47,7 +48,7 @@ public sealed class UiTests
         Assert.Equal("＋  Log Today", Named<Button>(window, "LogToday").Content);
         Assert.DoesNotContain(window.GetVisualDescendants().OfType<Button>(), x => x.Content is string s && s == "Edit today");
         Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows);
-        Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Rest; Click(Named<Button>(dialog, "SaveEntry"));
+        Named<ChoiceBar>(dialog, "DayStatus").Choose(Attendance.Rest); Click(Named<Button>(dialog, "SaveEntry"));
         Assert.Equal("Edit today", Named<Button>(window, "LogToday").Content);
         Click(Named<Button>(window, "LogToday")); dialog = Assert.Single(window.OwnedWindows); Click(Named<Button>(dialog, "SaveEntry"));
         Assert.Single(repo.Snapshot().Logs); window.Close();
@@ -77,8 +78,8 @@ public sealed class UiTests
         clock.Utc = clock.Utc.AddSeconds(2); window.UpdateClock(); Dispatcher.UIThread.RunJobs();
         Assert.Contains("01 Oct", Named<TextBlock>(window, "LocalClock").Text);
         Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows);
-        Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Rest;
-        Named<ComboBox>(dialog, "DietCompletion").SelectedIndex = 3; Click(Named<Button>(dialog, "SaveEntry"));
+        Named<ChoiceBar>(dialog, "DayStatus").Choose(Attendance.Rest);
+        Named<ChoiceBar>(dialog, "DietCompletion").Choose(75); Click(Named<Button>(dialog, "SaveEntry"));
         var log = Assert.Single(repo.Snapshot().Logs); Assert.Equal(new DateOnly(2026, 10, 1), log.Date); Assert.Equal(Attendance.Rest, log.EffectiveStatus); Assert.False(log.Trained); Assert.Null(log.EffectiveWorkoutCompletion); Assert.Equal(75, log.EffectiveDietCompletion); window.Close();
     }
     [AvaloniaFact]
@@ -87,15 +88,15 @@ public sealed class UiTests
         var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
         foreach (var status in new[] { Attendance.Training, Attendance.Rest, Attendance.Missed })
         {
-            Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows); Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)status;
-            Named<NumericUpDown>(dialog, "WorkoutCompletion").Value = 75; Named<ComboBox>(dialog, "DietCompletion").SelectedIndex = 3;
+            Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows); Named<ChoiceBar>(dialog, "DayStatus").Choose(status);
+            Named<ChoiceBar>(dialog, "WorkoutCompletion").Choose(75); Named<ChoiceBar>(dialog, "DietCompletion").Choose(75);
             Click(Named<Button>(dialog, "SaveEntry")); var log = Assert.Single(repo.Snapshot().Logs); Assert.Equal(status, log.EffectiveStatus);
             Assert.Equal(status == Attendance.Training ? 75 : status == Attendance.Missed ? 0 : (int?)null, log.EffectiveWorkoutCompletion); Assert.Equal(75, log.EffectiveDietCompletion);
         }
         var prior = repo.Snapshot().Logs.Single(); repo.Save("log", prior.Date.ToString("yyyy-MM-dd"), prior with { DietCompletion = 85 });
         window.Close(); window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
         Click(Named<Button>(window, "LogToday")); var legacy = Assert.Single(window.OwnedWindows);
-        Assert.Equal("85%", ((ComboBoxItem)Named<ComboBox>(legacy, "DietCompletion").SelectedItem!).Content); Click(Named<Button>(legacy, "SaveEntry"));
+        Assert.Equal(85, Named<ChoiceBar>(legacy, "DietCompletion").SelectedTag); Click(Named<Button>(legacy, "SaveEntry"));
         Assert.Equal(85, Assert.Single(repo.Snapshot().Logs).EffectiveDietCompletion);
         window.Close();
     }
@@ -119,7 +120,7 @@ public sealed class UiTests
         Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), x => x.Text?.Contains("+10%") == true);
         Capture(window, "goals-strength-progress");
         Click(Named<Button>(window, "LogToday")); dialog = Assert.Single(window.OwnedWindows);
-        Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Training; Named<ComboBox>(dialog, "LogRoutine").SelectedIndex = 1;
+        Named<ChoiceBar>(dialog, "DayStatus").Choose(Attendance.Training); Named<ComboBox>(dialog, "LogRoutine").SelectedIndex = 1;
         Click(Named<Button>(dialog, "SaveEntry")); Assert.Empty(repo.Snapshot().Logs);
         Assert.Single(dialog.GetVisualDescendants().OfType<CheckBox>(), x => x.Name == "PerformedExercise").IsChecked = true;
         Click(Named<Button>(dialog, "SaveEntry")); var log = Assert.Single(repo.Snapshot().Logs);
@@ -183,7 +184,7 @@ public sealed class UiTests
         {
             Click(Named<Button>(window, "Nav" + page)); Capture(window, "arabic-" + page.ToLowerInvariant()); Assert.Empty(window.OwnedWindows);
         }
-        Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows); Named<ComboBox>(dialog, "DayStatus").SelectedIndex = 1;
+        Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows); Named<ChoiceBar>(dialog, "DayStatus").Choose(Attendance.Training);
         Named<TextBox>(dialog, "WorkoutName").Focus(); Capture(dialog, "arabic-check-in-focused"); dialog.Close(); window.Close();
     }
     [AvaloniaFact]
