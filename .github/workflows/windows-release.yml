@@ -1,9 +1,13 @@
 name: Windows release
 
-# Manual only. Builds the Windows installer with scripts/Build-Release.ps1 on a
-# Windows runner and publishes it as a GitHub release.
+# Builds the Windows installer with scripts/Build-Release.ps1 on a Windows runner
+# and publishes it as a GitHub release. It runs when a v* tag is pushed, or when
+# started by hand with a tag name.
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
@@ -38,7 +42,7 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ inputs.tag }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           $installer = Get-ChildItem -Path artifacts/installer -Filter 'Fitlog-Setup-*.exe' | Select-Object -First 1
           if (-not $installer) { throw 'The installer was not produced.' }
