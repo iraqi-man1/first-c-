@@ -1,0 +1,49 @@
+name: Windows installer
+
+# Builds the Windows installer with scripts/Build-Release.ps1 on a Windows runner
+# and keeps it as a downloadable workflow artifact. It runs when this file changes
+# on a branch, or when a run is restarted from the Actions page.
+
+on:
+  push:
+    paths:
+      - '.github/workflows/windows-release.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up the .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build the installer
+        shell: pwsh
+        run: ./scripts/Build-Release.ps1
+
+      - name: Write the SHA-256 checksum
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path artifacts/installer -Filter 'Fitlog-Setup-*.exe' | Select-Object -First 1
+          if (-not $installer) { throw 'The installer was not produced.' }
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer.FullName).Hash.ToLowerInvariant()
+          "$hash  $($installer.Name)" | Out-File -FilePath (Join-Path artifacts/installer 'SHA256SUMS.txt') -Encoding ascii
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitlog-windows-installer
+          path: artifacts/installer/
+          if-no-files-found: error
+          retention-days: 30
