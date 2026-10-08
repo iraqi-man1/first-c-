@@ -1,25 +1,19 @@
-name: Windows release
+name: Windows installer
 
 # Builds the Windows installer with scripts/Build-Release.ps1 on a Windows runner
-# and publishes it as a GitHub release. It runs when a v* tag is pushed, or when
-# started by hand with a tag name.
+# and keeps it as a downloadable workflow artifact. It runs when this file changes
+# on a branch, or when a run is restarted from the Actions page.
 
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Release tag to create, for example v1.3.0
-        required: true
-        type: string
+    paths:
+      - '.github/workflows/windows-release.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  installer:
     runs-on: windows-latest
     steps:
       - name: Check out the repository
@@ -38,14 +32,18 @@ jobs:
         shell: pwsh
         run: ./scripts/Build-Release.ps1
 
-      - name: Create the GitHub release
+      - name: Write the SHA-256 checksum
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           $installer = Get-ChildItem -Path artifacts/installer -Filter 'Fitlog-Setup-*.exe' | Select-Object -First 1
           if (-not $installer) { throw 'The installer was not produced.' }
           $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer.FullName).Hash.ToLowerInvariant()
-          $notes = "Windows installer for Fitlog $env:TAG.`n`nSHA-256: $hash"
-          gh release create $env:TAG $installer.FullName --title "Fitlog $env:TAG" --notes $notes
+          "$hash  $($installer.Name)" | Out-File -FilePath (Join-Path artifacts/installer 'SHA256SUMS.txt') -Encoding ascii
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitlog-windows-installer
+          path: artifacts/installer/
+          if-no-files-found: error
+          retention-days: 30
