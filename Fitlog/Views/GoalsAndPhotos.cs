@@ -32,7 +32,7 @@ public sealed partial class MainWindow
         if (_data.Goals.Count == 0) page.Children.Add(Empty("Make it personal", "Set a strength, distance, or consistency goal and update your progress as you go.", "Add your first goal", () => EditGoal()));
         foreach (var goal in _data.Goals)
         {
-            var s = Stack(UiMetrics.Lg); var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm }; actions.Children.Add(Button("Update", () => EditGoal(goal))); actions.Children.Add(Button("Delete", () => DeleteRecord("goal", goal.Id)));
+            var s = Stack(UiMetrics.Lg); var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm }; actions.Children.Add(Button("Update", () => EditGoal(goal))); actions.Children.Add(Destructive(Button("Delete", () => DeleteRecord("goal", goal.Id))));
             s.Children.Add(Split(T(goal.Title, 23, true), actions)); s.Children.Add(T($"{goal.Current:0.#} / {goal.Target:0.#} {goal.Unit}   ·   {Math.Min(100, goal.Current / goal.Target * 100):0}%", color: Muted)); s.Children.Add(new ProgressBar { Value = goal.Current, Maximum = goal.Target, Height = 8, Foreground = Accent, Background = Raised }); if (goal.Current >= goal.Target) s.Children.Add(T("✓  Goal achieved", 13, true, Accent)); page.Children.Add(Card(s));
         }
         return page;

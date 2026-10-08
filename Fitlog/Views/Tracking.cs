@@ -15,7 +15,7 @@ public sealed partial class MainWindow
         var list = Weights; var values = list.Select(x => x.Kilograms).ToList();
         page.Children.Add(Columns(Stat("Current weight", values.Count > 0 ? Weight(values[^1]) : "—"), Stat("Starting weight", values.Count > 0 ? Weight(values[0]) : "—"), Stat("Lowest", values.Count > 0 ? Weight(values.Min()) : "—"), Stat("Highest", values.Count > 0 ? Weight(values.Max()) : "—")));
         var graph = Stack(UiMetrics.Xl); var filters = new WrapPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        foreach (var range in new[] { "Week", "Month", "3 months", "6 months", "Year", "All" }) { var b = Button(range, () => { _weightRange = range; RenderPage(); }); b.Background = range == _weightRange ? Line : Brushes.Transparent; filters.Children.Add(b); }
+        foreach (var range in new[] { "Week", "Month", "3 months", "6 months", "Year", "All" }) filters.Children.Add(Segment(range, range == _weightRange, () => { _weightRange = range; RenderPage(); }));
         graph.Children.Add(Split(Heading("History", "Weight trend", ""), new Border { Background = Raised, CornerRadius = new(12), Child = filters, Padding = new(4) }, "*,1.5*"));
         int days = _weightRange switch { "Week" => 7, "Month" => 30, "3 months" => 90, "6 months" => 180, "Year" => 365, _ => 3650000 };
         var filtered = list.Where(x => Today.DayNumber - x.Date.DayNumber <= days && x.Date <= Today).ToList(); graph.Children.Add(Chart(filtered)); page.Children.Add(Card(graph));
@@ -25,7 +25,7 @@ public sealed partial class MainWindow
         if (list.Count == 0) history.Children.Add(T("No weigh-ins yet. Add your first weight to start your trend.", color: Muted));
         foreach (var entry in list.AsEnumerable().Reverse())
         {
-            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm }; actions.Children.Add(Button("Edit", () => EditWeight(entry))); actions.Children.Add(Button("Delete", () => DeleteRecord("weight", entry.Date.ToString("yyyy-MM-dd"))));
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm }; actions.Children.Add(Button("Edit", () => EditWeight(entry))); actions.Children.Add(Destructive(Button("Delete", () => DeleteRecord("weight", entry.Date.ToString("yyyy-MM-dd")))));
             history.Children.Add(Row(DateText(entry.Date, "ddd, dd MMM yyyy"), Weight(entry.Kilograms), actions));
         }
         page.Children.Add(Card(history)); return page;
@@ -44,7 +44,7 @@ public sealed partial class MainWindow
         if (items.Count == 0) rows.Children.Add(T("No measurements yet. All measurements are optional.", color: Muted));
         foreach (var x in items)
         {
-            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm }; actions.Children.Add(Button("Edit", () => EditMeasurement(x))); actions.Children.Add(Button("Delete", () => DeleteRecord("measurement", x.Date.ToString("yyyy-MM-dd"))));
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm }; actions.Children.Add(Button("Edit", () => EditMeasurement(x))); actions.Children.Add(Destructive(Button("Delete", () => DeleteRecord("measurement", x.Date.ToString("yyyy-MM-dd")))));
             rows.Children.Add(Row(DateText(x.Date, "dd MMM yyyy"), $"{Tr("Waist")} {Length(x.Waist)} · {Tr("Chest")} {Length(x.Chest)} · {Tr("Hips")} {Length(x.Hips)}", actions));
         }
         page.Children.Add(Card(rows)); return page;
