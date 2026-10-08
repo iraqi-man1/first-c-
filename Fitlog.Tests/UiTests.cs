@@ -54,6 +54,21 @@ public sealed class UiTests
         Assert.Single(repo.Snapshot().Logs); window.Close();
     }
     [AvaloniaFact]
+    public void WorkoutFieldsAreShownOnlyOnTrainingDays()
+    {
+        var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
+        Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows);
+        var completion = Named<ChoiceBar>(dialog, "WorkoutCompletion");
+        Named<ChoiceBar>(dialog, "DayStatus").Choose(Attendance.Training); Dispatcher.UIThread.RunJobs();
+        Assert.True(completion.IsEffectivelyVisible);
+        Named<ChoiceBar>(dialog, "DayStatus").Choose(Attendance.Rest); Dispatcher.UIThread.RunJobs();
+        Assert.False(completion.IsEffectivelyVisible);
+        Named<ChoiceBar>(dialog, "DayStatus").Choose(Attendance.Missed); Dispatcher.UIThread.RunJobs();
+        Assert.False(completion.IsEffectivelyVisible);
+        Click(Named<Button>(dialog, "SaveEntry")); var log = Assert.Single(repo.Snapshot().Logs);
+        Assert.Equal(Attendance.Missed, log.EffectiveStatus); Assert.Equal(0, log.EffectiveWorkoutCompletion); window.Close();
+    }
+    [AvaloniaFact]
     public void MeasurementGoalAndUnitPreferencesCanBeEditedAndPersisted()
     {
         var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();

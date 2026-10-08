@@ -35,6 +35,7 @@ public sealed partial class MainWindow
         var footer = Stack(UiMetrics.Md); footer.Children.Add(error);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Md, HorizontalAlignment = HorizontalAlignment.Right };
         actions.Children.Add(Button("Cancel", () => dialog.Close())); actions.Children.Add(saveButton); footer.Children.Add(actions);
+        form.Margin = new Thickness(UiMetrics.Md, 0);
         var layout = new Grid { RowDefinitions = new("*,Auto"), RowSpacing = UiMetrics.Lg };
         layout.Children.Add(new ScrollViewer { Content = form, MaxHeight = 640 }); Grid.SetRow(footer, 1); layout.Children.Add(footer); dialog.Content = layout;
     }
