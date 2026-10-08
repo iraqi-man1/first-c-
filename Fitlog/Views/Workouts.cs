@@ -20,7 +20,7 @@ public sealed partial class MainWindow
             var content = Stack(UiMetrics.Lg);
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm };
             var edit = Button("Edit", () => EditRoutine(routine)); edit.Name = "EditRoutine"; actions.Children.Add(edit);
-            actions.Children.Add(Button("Delete", () => DeleteRecord("routine", routine.Id)));
+            actions.Children.Add(Destructive(Button("Delete", () => DeleteRecord("routine", routine.Id))));
             var heading = Stack(UiMetrics.Sm); heading.Children.Add(T(routine.Title, 24, true));
             heading.Children.Add(T(routine.Days.Count == 0 ? "Choose on check-in" : string.Join(" · ", routine.Days.OrderBy(x => ((int)x + (Pref.SundayFirst ? 0 : 6)) % 7).Select(x => Tr(x.ToString()))), 13, color: Muted));
             heading.Children.Add(T(routine.CreatedOn is { } createdOn ? $"{Tr("Created on")} {DateText(createdOn)}" : "Creation date not recorded", 12, color: Muted));

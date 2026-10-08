@@ -65,6 +65,10 @@ public sealed partial class MainWindow
         This removes the selected entry from this device.|سيتم حذف السجل المحدد من هذا الجهاز.
         Entry deleted|تم حذف السجل
         Today|اليوم
+        Edit today|تعديل اليوم
+        Plan|الخطة
+        Body|الجسم
+        Progress|التقدم
         A little progress, every day. Start with a check-in.|خطوة صغيرة كل يوم. ابدأ بتسجيل يومك.
         Training day|يوم تمرين
         Rest day|يوم راحة

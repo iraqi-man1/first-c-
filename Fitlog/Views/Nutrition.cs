@@ -29,7 +29,7 @@ public sealed partial class MainWindow
             title.Children.Add(T($"{Tr("Created on")} {DateText(plan.CreatedOn)}   ·   {plan.Meals.Count} {Tr(plan.Meals.Count == 1 ? "Meal" : "Meals")}", 12, color: Muted));
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm };
             var edit = Button("Edit", () => EditNutritionPlan(plan)); edit.Name = "EditNutritionPlan"; actions.Children.Add(edit);
-            actions.Children.Add(Button("Delete", () => DeleteRecord("nutrition", plan.Id)));
+            actions.Children.Add(Destructive(Button("Delete", () => DeleteRecord("nutrition", plan.Id))));
             content.Children.Add(Split(title, actions));
 
             var meals = Stack(UiMetrics.Sm);

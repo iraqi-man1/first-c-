@@ -14,7 +14,6 @@ public sealed partial class MainWindow
         var hero = Stack(UiMetrics.Lg); hero.Children.Add(T(DateText(Today, "dddd, MMMM dd").ToUpperInvariant(), 10, true, Muted));
         hero.Children.Add(T("Today", 42, true));
         hero.Children.Add(T(today == null ? "A little progress, every day. Start with a check-in." : LogSummary(today), color: Muted));
-        var log = Button("＋  Log Today", () => EditLog(Today), true); log.Margin = new Thickness(0, UiMetrics.Sm, 0, 0); log.HorizontalAlignment = HorizontalAlignment.Left; hero.Children.Add(log);
         var weekStart = Metrics.WeekStart(Today, Pref.SundayFirst);
         var weekLogs = _data.Logs.Where(x => x.Date >= weekStart && x.Date <= Today).ToList();
         var count = weekLogs.Count(x => x.Trained);
@@ -28,7 +27,7 @@ public sealed partial class MainWindow
         var filters = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Xs };
         foreach (var filter in new[] { "Overall", "Gym", "Diet", "Weight logging" })
         {
-            var b = Button(filter, () => { _heatFilter = filter; RenderPage(); }); b.Background = _heatFilter == filter ? Line : Brushes.Transparent; filters.Children.Add(b);
+            filters.Children.Add(Segment(filter, _heatFilter == filter, () => { _heatFilter = filter; RenderPage(); }));
         }
         var year = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Lg };
         year.Children.Add(Button("‹", () => { _year--; RenderPage(); })); year.Children.Add(T(_year.ToString(), 14, true)); year.Children.Add(Button("›", () => { if (_year < 9998) _year++; RenderPage(); }));

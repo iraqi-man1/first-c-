@@ -71,7 +71,7 @@ public sealed partial class MainWindow
         for (int i = 0; i < optional.Count; i += 2) form.Children.Add(i + 1 < optional.Count ? Columns(optional[i], optional[i + 1]) : optional[i]);
         var notes = new TextBox { Text = entry.Notes, Watermark = "How did today feel?", AcceptsReturn = true, TextWrapping = Avalonia.Media.TextWrapping.Wrap, MinHeight = 85, MaxLength = 5000, Name = "DailyNotes" }; form.Children.Add(Field("Notes", notes));
         form.Children.Add(Button("＋  Add a weigh-in for this day", () => EditWeight(_data.Weights.FirstOrDefault(x => x.Date == date), date, dialog)));
-        if (existing != null) form.Children.Add(Button("Delete check-in", async () => { if (await Confirm("Delete check-in?", "The check-in will be removed. Weigh-ins and photos are kept separately.")) { _repository.Delete("log", date.ToString("yyyy-MM-dd")); dialog.Close(); Refresh("Check-in deleted"); } }));
+        if (existing != null) form.Children.Add(Destructive(Button("Delete check-in", async () => { if (await Confirm("Delete check-in?", "The check-in will be removed. Weigh-ins and photos are kept separately.")) { _repository.Delete("log", date.ToString("yyyy-MM-dd")); dialog.Close(); Refresh("Check-in deleted"); } })));
         EditorContent(dialog, form, () =>
         {
             if (attendance.SelectedIndex <= 0) throw new InvalidDataException("Choose a day status");

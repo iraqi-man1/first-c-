@@ -28,6 +28,7 @@ public sealed partial class MainWindow : Window
     private string _weightRange = "3 months";
     private ContentControl _pageHost = new();
     private TextBlock _status = new();
+    private Button? _logButton;
     private readonly List<IDisposable> _images = [];
     private DateOnly Today => DateOnly.FromDateTime(_clock.GetLocalNow().DateTime);
     private IBrush BackgroundBrush => Brush(Pref.Light ? "#F3F6F8" : "#101820");
@@ -82,14 +83,27 @@ public sealed partial class MainWindow : Window
         brand.Children.Add(new Border { Width = 44, Height = 44, CornerRadius = new(UiMetrics.ControlRadius), ClipToBounds = true, Background = Surface, Child = new Image { Source = _brandLogo, Stretch = Stretch.Uniform, FlowDirection = FlowDirection.LeftToRight } });
         brand.Children.Add(T("fitlog", 22, true)); sidebar.Children.Add(brand);
         var navigation = Stack(UiMetrics.Xs); navigation.Margin = new Thickness(0, UiMetrics.Lg, 0, 0);
-        (string label, string glyph)[] items = [("Dashboard", "\uE9D9"), ("Calendar", "\uE787"), ("Workouts", "\uE7C1"), ("Nutrition", "\uEC09"), ("Weight", "\uE9D5"), ("Measurements", "\uE9D2"), ("Progress Photos", "\uE722"), ("Goals & Records", "\uE7C1"), ("Journey", "\uE70B"), ("Statistics", "\uE9D2"), ("Settings", "\uE713")];
-        foreach (var (label, glyph) in items)
+        (string? heading, (string label, string glyph)[] items)[] groups =
+        [
+            ("Today", [("Dashboard", "\uE9D9"), ("Calendar", "\uE787")]),
+            ("Plan", [("Workouts", "\uE7C1"), ("Nutrition", "\uEC09")]),
+            ("Body", [("Weight", "\uE9D5"), ("Measurements", "\uE9D2"), ("Progress Photos", "\uE722")]),
+            ("Progress", [("Goals & Records", "\uE7C1"), ("Journey", "\uE70B"), ("Statistics", "\uE9D2")]),
+            (null, [("Settings", "\uE713")]),
+        ];
+        foreach (var (heading, items) in groups)
         {
-            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Md, VerticalAlignment = VerticalAlignment.Center };
-            content.Children.Add(Glyph(glyph)); content.Children.Add(T(label, 15, color: Muted));
-            var button = Button(content, () => Navigate(label)); button.Classes.Add("nav"); button.Name = "Nav" + label.Replace(" ", "").Replace("&", "");
-            button.Background = _page == label ? Raised : Brushes.Transparent;
-            navigation.Children.Add(button);
+            if (heading != null) { var title = T(heading, 11, true, Muted); title.Margin = new Thickness(UiMetrics.Md, UiMetrics.Sm, 0, UiMetrics.Xs); navigation.Children.Add(title); }
+            foreach (var (label, glyph) in items)
+            {
+                var active = _page == label;
+                var icon = Glyph(glyph); var text = T(label, 15, active, active ? Ink : Muted); if (active) icon.Foreground = Accent;
+                var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Md, VerticalAlignment = VerticalAlignment.Center };
+                content.Children.Add(icon); content.Children.Add(text);
+                var button = Button(content, () => Navigate(label)); button.Classes.Add("nav"); button.Name = "Nav" + label.Replace(" ", "").Replace("&", "");
+                button.Background = active ? Raised : Brushes.Transparent;
+                navigation.Children.Add(button);
+            }
         }
         var navScroll = new ScrollViewer { Content = navigation }; Grid.SetRow(navScroll, 1); sidebar.Children.Add(navScroll);
         var local = T("●   Saved on this device", 11, color: Muted); local.Margin = new Thickness(UiMetrics.Md, 0); local.VerticalAlignment = VerticalAlignment.Center; Grid.SetRow(local, 2); sidebar.Children.Add(local);
@@ -109,7 +123,7 @@ public sealed partial class MainWindow : Window
         };
         Grid.SetColumn(date, 1); header.Children.Add(date);
         var theme = Button(Glyph(Pref.Light ? "\uE708" : "\uE706", 18), () => { Pref.Light = !Pref.Light; SavePreferences(); }); theme.Classes.Add("icon"); theme.Name = "SwitchAppearance"; theme.Background = Brushes.Transparent; theme.HorizontalContentAlignment = HorizontalAlignment.Center; theme.VerticalContentAlignment = VerticalAlignment.Center; ToolTip.SetTip(theme, Tr("Switch appearance")); Grid.SetColumn(theme, 2); header.Children.Add(theme);
-        var log = Button("＋  Log Today", () => EditLog(Today), true); log.Name = "LogToday"; Grid.SetColumn(log, 3); header.Children.Add(log);
+        _logButton = Button(LogLabel, () => EditLog(Today), true); _logButton.Name = "LogToday"; Grid.SetColumn(_logButton, 3); header.Children.Add(_logButton);
         right.Children.Add(new Border { BorderBrush = Line, BorderThickness = new(0, 0, 0, 1), Child = header });
         _pageHost = new ContentControl { Margin = UiMetrics.PageMargin, HorizontalContentAlignment = HorizontalAlignment.Stretch };
         var scroll = new ScrollViewer { Content = _pageHost, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled }; Grid.SetRow(scroll, 1); right.Children.Add(scroll);
@@ -127,7 +141,7 @@ public sealed partial class MainWindow : Window
             "Journey" => JourneyPage(), "Statistics" => StatisticsPage(), _ => DashboardPage()
         };
     }
-    private void Refresh(string message = "Saved to your device") { Reload(); RenderPage(); _status.Text = Tr(message); }
+    private void Refresh(string message = "Saved to your device") { Reload(); RenderPage(); UpdateLogButton(); _status.Text = Tr(message); }
     private void SavePreferences() { _repository.Save("preferences", "main", Pref); Reload(); BuildShell(); }
     private TextBlock T(string text, double size = 14, bool bold = false, IBrush? color = null) => new()
     {
@@ -149,6 +163,14 @@ public sealed partial class MainWindow : Window
         if (primary) b.Classes.Add("primary"); else { b.Background = Raised; b.Foreground = Ink; b.BorderBrush = Line; }
         b.Click += async (_, _) => { try { await action(); } catch (Exception ex) { await Error(ex.Message); } }; return b;
     }
+    private string LogLabel => _data.Logs.Any(x => x.Date == Today) ? "Edit today" : "＋  Log Today";
+    private void UpdateLogButton() { if (_logButton != null) _logButton.Content = Tr(LogLabel); }
+    private Button Segment(string label, bool selected, Action action)
+    {
+        var b = Button(label, action); b.Background = selected ? Accent : Brushes.Transparent; b.BorderBrush = Brushes.Transparent;
+        b.Foreground = selected ? Brush("#101820") : Muted; b.FontWeight = selected ? FontWeight.SemiBold : FontWeight.Normal; return b;
+    }
+    private Button Destructive(Button button) { button.Foreground = Brush("#E99B92"); button.BorderBrush = Brush("#E99B92"); return button; }
     private Grid Columns(params Control[] children) => ColumnsWithMinimum(children.Length == 2 ? 320 : children.Length == 3 ? 190 : 200, children);
     private Grid ColumnsWithMinimum(double minimum, params Control[] children)
     {
@@ -223,7 +245,7 @@ public sealed partial class MainWindow : Window
     {
         var dialog = Dialog(title); var s = Stack(); s.Children.Add(T(title, 24, true)); s.Children.Add(T(text, color: Muted));
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Md, HorizontalAlignment = HorizontalAlignment.Right };
-        actions.Children.Add(Button("Cancel", () => dialog.Close(false))); actions.Children.Add(Button("Delete", () => dialog.Close(true), true));
+        var cancel = Button("Cancel", () => dialog.Close(false)); cancel.IsCancel = true; actions.Children.Add(cancel); actions.Children.Add(Destructive(Button("Delete", () => dialog.Close(true))));
         s.Children.Add(actions); dialog.Content = s; return await dialog.ShowDialog<bool>(this);
     }
     private async Task DeleteRecord(string kind, string id)

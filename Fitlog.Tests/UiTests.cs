@@ -41,6 +41,18 @@ public sealed class UiTests
         Assert.Equal(79.9, Assert.Single(repo.Snapshot().Weights).Kilograms); window.Close();
     }
     [AvaloniaFact]
+    public void HeaderTodayActionSwitchesToEditOnceTodayIsLogged()
+    {
+        var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
+        Assert.Equal("＋  Log Today", Named<Button>(window, "LogToday").Content);
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Button>(), x => x.Content is string s && s == "Edit today");
+        Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows);
+        Named<ComboBox>(dialog, "DayStatus").SelectedIndex = (int)Attendance.Rest; Click(Named<Button>(dialog, "SaveEntry"));
+        Assert.Equal("Edit today", Named<Button>(window, "LogToday").Content);
+        Click(Named<Button>(window, "LogToday")); dialog = Assert.Single(window.OwnedWindows); Click(Named<Button>(dialog, "SaveEntry"));
+        Assert.Single(repo.Snapshot().Logs); window.Close();
+    }
+    [AvaloniaFact]
     public void MeasurementGoalAndUnitPreferencesCanBeEditedAndPersisted()
     {
         var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
