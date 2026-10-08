@@ -150,12 +150,15 @@ public sealed partial class MainWindow
             if (_ingredients.Count >= 30) return;
             var editor = new IngredientEditor(_owner, item);
             _ingredients.Add(editor);
-            var row = new Grid { ColumnDefinitions = new("2*,*,*,Auto"), ColumnSpacing = UiMetrics.Sm };
-            var controls = new Control[] { _owner.Field("Food item", editor.Name), _owner.Field("Amount", editor.Amount), _owner.Field("Unit", editor.Unit) };
-            for (var i = 0; i < controls.Length; i++) { Grid.SetColumn(controls[i], i); row.Children.Add(controls[i]); }
+            var row = new Grid { ColumnDefinitions = new("*,Auto"), RowDefinitions = new("Auto,Auto"), ColumnSpacing = UiMetrics.Sm, RowSpacing = UiMetrics.Sm };
+            var food = _owner.Field("Food item", editor.Name); row.Children.Add(food);
+            var quantity = new Grid { ColumnDefinitions = new("*,*"), ColumnSpacing = UiMetrics.Sm };
+            var amount = _owner.Field("Amount", editor.Amount); Grid.SetColumn(amount, 0); quantity.Children.Add(amount);
+            var unit = _owner.Field("Unit", editor.Unit); Grid.SetColumn(unit, 1); quantity.Children.Add(unit);
+            Grid.SetRow(quantity, 1); Grid.SetColumnSpan(quantity, 2); row.Children.Add(quantity);
             Button remove = null!;
             remove = _owner.Button("Remove", () => { _ingredients.Remove(editor); IngredientRows.Children.Remove(row); _removeButtons.Remove(remove); UpdateRemoveButtons(); });
-            remove.Name = "RemoveIngredient"; Grid.SetColumn(remove, 3); row.Children.Add(remove);
+            remove.Name = "RemoveIngredient"; remove.VerticalAlignment = VerticalAlignment.Bottom; Grid.SetColumn(remove, 1); row.Children.Add(remove);
             IngredientRows.Children.Add(row); _removeButtons.Add(remove); UpdateRemoveButtons();
         }
 
@@ -182,7 +185,7 @@ public sealed partial class MainWindow
         public IngredientEditor(MainWindow owner, MealIngredient? item)
         {
             Name = new TextBox { Name = "IngredientName", Text = item?.Name ?? "", Watermark = "e.g. Oats", MaxLength = 100 };
-            Amount = Number(item?.Amount ?? 100, .1, 10000, .1); Amount.Name = "MealAmount";
+            Amount = Number(item?.Amount ?? 100, .1, 10000, .1); Amount.Name = "MealAmount"; Amount.ShowButtonSpinner = false;
             Unit = owner.SelectOptions(["g", "tbsp"], (int)(item?.Unit ?? MealUnit.Grams)); Unit.Name = "MealUnit";
         }
         public MealIngredient Read()

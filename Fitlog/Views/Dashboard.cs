@@ -33,8 +33,9 @@ public sealed partial class MainWindow
         year.Children.Add(Button("‹", () => { _year--; RenderPage(); })); year.Children.Add(T(_year.ToString(), 14, true)); year.Children.Add(Button("›", () => { if (_year < 9998) _year++; RenderPage(); }));
         activity.Children.Add(Split(new Border { CornerRadius = new(UiMetrics.ControlRadius), Background = Raised, Padding = new(UiMetrics.Xs), Child = filters, HorizontalAlignment = HorizontalAlignment.Left }, year));
         activity.Children.Add(BuildHeatmap());
-        var legend = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, UiMetrics.Lg, 0, 0) };
-        legend.Children.Add(T("Less", 10, color: Muted)); foreach (var color in new[] { "#24333E", "#415B6B", "#7699AD", "#ADCDDB" }) legend.Children.Add(new Border { Width = 10, Height = 10, CornerRadius = new(2), Background = Brush(color), VerticalAlignment = VerticalAlignment.Center }); legend.Children.Add(T("More", 10, color: Muted)); activity.Children.Add(legend);
+        var scale = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Sm, HorizontalAlignment = HorizontalAlignment.Right };
+        scale.Children.Add(T(L("Less", "أقل"), 10, color: Muted)); foreach (var color in new[] { "#24333E", "#415B6B", "#7699AD", "#ADCDDB" }) scale.Children.Add(new Border { Width = 10, Height = 10, CornerRadius = new(2), Background = Brush(color), VerticalAlignment = VerticalAlignment.Center }); scale.Children.Add(T(L("More", "أكثر"), 10, color: Muted));
+        var legend = Split(T(HeatLegend(), 12, color: Muted), scale, "*,Auto"); legend.Margin = new Thickness(0, UiMetrics.Lg, 0, 0); activity.Children.Add(legend);
         page.Children.Add(Card(activity));
         var monthLogs = _data.Logs.Where(x => x.Date.Year == Today.Year && x.Date.Month == Today.Month && x.Date <= Today).ToList();
         var dietPercent = monthLogs.Count == 0 ? "—" : $"{monthLogs.Average(x => x.EffectiveDietCompletion):0}%";
@@ -43,13 +44,20 @@ public sealed partial class MainWindow
         var goals = Stack(UiMetrics.Lg); goals.Children.Add(T("Your goals", 25, true)); goals.Children.Add(T($"{Tr("Target weight")}   {Weight(Pref.TargetWeight)}", color: Muted)); goals.Children.Add(T($"{Tr("Monthly gym goal")}   {monthLogs.Count(x => x.Trained)} / {Pref.MonthlyGoal}", color: Muted)); goals.Children.Add(Button("View goals  →", () => Navigate("Goals & Records")));
         page.Children.Add(Split(Card(trend), Card(goals), "1.4*,*")); return page;
     }
+    private string HeatLegend() => _heatFilter switch
+    {
+        "Gym" => L("Brighter squares mean more of the planned workout was completed.", "الخانة الأفتح تعني إنجازاً أعلى من التمرين المخطط."),
+        "Diet" => L("Brighter squares mean higher diet adherence that day.", "الخانة الأفتح تعني التزاماً غذائياً أعلى في ذلك اليوم."),
+        "Weight logging" => L("Bright squares mean a weigh-in was saved that day.", "الخانة المضيئة تعني أنك سجّلت وزنك في ذلك اليوم."),
+        _ => L("Each square counts up to three signals: gym, diet and weigh-in.", "كل خانة تحسب حتى ثلاث إشارات: التمرين والغذاء والوزن.")
+    };
     private Control BuildHeatmap()
     {
         var start = new DateOnly(_year, 1, 1); var end = new DateOnly(_year, 12, 31); var origin = Metrics.WeekStart(start, Pref.SundayFirst);
         var weeks = (end.DayNumber - origin.DayNumber) / 7 + 1;
         var grid = new Grid { FlowDirection = FlowDirection.LeftToRight, ColumnDefinitions = new("64," + string.Join(",", Enumerable.Repeat("*", weeks))), RowDefinitions = new("26,20,20,20,20,20,20,20"), ColumnSpacing = 3, RowSpacing = 3, MinWidth = 720 };
         foreach (int row in new[] { 1, 3, 5 }) { var day = origin.AddDays(row - 1); var label = T(DateText(day, "ddd"), 11, color: Muted); Grid.SetRow(label, row); grid.Children.Add(label); }
-        for (var month = 1; month <= 12; month++) { var d = new DateOnly(_year, month, 1); var label = T(Arabic ? month.ToString() : DateText(d, "MMM"), 11, color: Muted); Grid.SetColumn(label, (d.DayNumber - origin.DayNumber) / 7 + 1); Grid.SetColumnSpan(label, Math.Min(3, weeks - (d.DayNumber - origin.DayNumber) / 7)); grid.Children.Add(label); }
+        for (var month = 1; month <= 12; month++) { var d = new DateOnly(_year, month, 1); var label = T(DateText(d, "MMM"), 11, color: Muted); Grid.SetColumn(label, (d.DayNumber - origin.DayNumber) / 7 + 1); Grid.SetColumnSpan(label, Math.Min(3, weeks - (d.DayNumber - origin.DayNumber) / 7)); grid.Children.Add(label); }
         var logs = _data.Logs.ToDictionary(x => x.Date); var weights = _data.Weights.Select(x => x.Date).ToHashSet();
         for (var day = start; day <= end; day = day.AddDays(1))
         {

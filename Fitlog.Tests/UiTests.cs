@@ -69,6 +69,17 @@ public sealed class UiTests
         Assert.Equal(Attendance.Missed, log.EffectiveStatus); Assert.Equal(0, log.EffectiveWorkoutCompletion); window.Close();
     }
     [AvaloniaFact]
+    public void CheckInNeedsAStatusAndSavesTheChosenEnergy()
+    {
+        var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
+        Click(Named<Button>(window, "LogToday")); var dialog = Assert.Single(window.OwnedWindows);
+        Click(Named<Button>(dialog, "SaveEntry"));
+        Assert.Empty(repo.Snapshot().Logs); Assert.Single(window.OwnedWindows);
+        Named<ChoiceBar>(dialog, "DayStatus").Choose(Attendance.Rest); Named<ChoiceBar>(dialog, "Energy").Choose(5);
+        Click(Named<Button>(dialog, "SaveEntry"));
+        var log = Assert.Single(repo.Snapshot().Logs); Assert.Equal(Attendance.Rest, log.EffectiveStatus); Assert.Equal(5, log.Energy); window.Close();
+    }
+    [AvaloniaFact]
     public void MeasurementGoalAndUnitPreferencesCanBeEditedAndPersisted()
     {
         var repo = RepositoryTests.NewRepository(); var window = new MainWindow(repo); window.Show(); Dispatcher.UIThread.RunJobs();
