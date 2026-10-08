@@ -112,14 +112,12 @@ public sealed partial class MainWindow : Window
         var header = new Grid { ColumnDefinitions = new("*,Auto,Auto,Auto"), ColumnSpacing = UiMetrics.Md, Margin = new Thickness(UiMetrics.PageGutter, 0), Background = Brushes.Transparent };
         var titleGroup = Stack(UiMetrics.Xs); titleGroup.VerticalAlignment = VerticalAlignment.Center; titleGroup.Children.Add(T(_page, 14, true));
         _clockLabel = T(_clock.GetLocalNow().ToString("dd MMM yyyy · HH:mm:ss", UiCulture), 11, color: Muted); _clockLabel.Name = "LocalClock"; titleGroup.Children.Add(_clockLabel); header.Children.Add(titleGroup);
-        var date = new CalendarDatePicker { Width = 160, VerticalAlignment = VerticalAlignment.Center, Name = "OpenDate", SelectedDate = Today.ToDateTime(TimeOnly.MinValue), DisplayDateEnd = Today.ToDateTime(TimeOnly.MinValue), Background = Surface, BorderBrush = Line };
-        var selectedHeaderDate = Today;
+        var date = new CalendarDatePicker { Width = 160, VerticalAlignment = VerticalAlignment.Center, Name = "OpenDate", Watermark = Tr("Open a date"), DisplayDateEnd = Today.ToDateTime(TimeOnly.MinValue), Background = Surface, BorderBrush = Line };
         date.SelectedDateChanged += (_, _) =>
         {
             if (date.SelectedDate is not { } value) return;
-            var selected = DateOnly.FromDateTime(value);
-            if (selected == selectedHeaderDate) return;
-            selectedHeaderDate = selected; _ = EditLog(selected);
+            _ = EditLog(DateOnly.FromDateTime(value));
+            date.SelectedDate = null;
         };
         Grid.SetColumn(date, 1); header.Children.Add(date);
         var theme = Button(Glyph(Pref.Light ? "\uE708" : "\uE706", 18), () => { Pref.Light = !Pref.Light; SavePreferences(); }); theme.Classes.Add("icon"); theme.Name = "SwitchAppearance"; theme.Background = Brushes.Transparent; theme.HorizontalContentAlignment = HorizontalAlignment.Center; theme.VerticalContentAlignment = VerticalAlignment.Center; ToolTip.SetTip(theme, Tr("Switch appearance")); Grid.SetColumn(theme, 2); header.Children.Add(theme);

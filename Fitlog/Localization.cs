@@ -49,6 +49,9 @@ public sealed partial class MainWindow
         Switch appearance|تغيير المظهر
         Log Today|سجّل اليوم
         Saved to your device|تم الحفظ على جهازك
+        Check-in saved|تم حفظ التسجيل
+        Weight saved|تم حفظ الوزن
+        Measurement saved|تم حفظ القياس
         Save entry|حفظ السجل
         Save|حفظ
         Cancel|إلغاء

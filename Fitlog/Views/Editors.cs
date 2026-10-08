@@ -28,10 +28,10 @@ public sealed partial class MainWindow
     private static double Value(NumericUpDown input) => (double)(input.Value ?? throw new InvalidDataException("Enter all numeric values before saving."));
     private CalendarDatePicker DatePicker(DateOnly date) => new() { SelectedDate = date.ToDateTime(TimeOnly.MinValue), DisplayDateEnd = Today.ToDateTime(TimeOnly.MinValue), HorizontalAlignment = HorizontalAlignment.Stretch };
     private DateOnly Selected(CalendarDatePicker date) => date.SelectedDate is { } value && DateOnly.FromDateTime(value) <= Today ? DateOnly.FromDateTime(value) : throw new InvalidDataException("Choose a date on or before today.");
-    private void EditorContent(Window dialog, StackPanel form, Action save)
+    private void EditorContent(Window dialog, StackPanel form, Action save, string saved = "Saved to your device")
     {
         var error = T("", 12, color: Brush("#E99B92"));
-        var saveButton = Button("Save entry", () => { try { save(); dialog.Close(); Refresh(); } catch (Exception ex) { error.Text = Tr(ex.Message); } }, true); saveButton.Name = "SaveEntry";
+        var saveButton = Button("Save entry", () => { try { save(); dialog.Close(); Refresh(saved); } catch (Exception ex) { error.Text = Tr(ex.Message); } }, true); saveButton.Name = "SaveEntry";
         var footer = Stack(UiMetrics.Md); footer.Children.Add(error);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = UiMetrics.Md, HorizontalAlignment = HorizontalAlignment.Right };
         actions.Children.Add(Button("Cancel", () => dialog.Close())); actions.Children.Add(saveButton); footer.Children.Add(actions);
@@ -89,7 +89,7 @@ public sealed partial class MainWindow
             var dietPercent = Pick(diet); var selectedRoutine = trained ? SelectedRoutine() : null;
             if (selectedRoutine != null && !exerciseChecks.Any(x => x.Check.IsChecked == true)) throw new InvalidDataException("Choose at least one completed exercise.");
             _repository.Save("log", date.ToString("yyyy-MM-dd"), new DailyLog { Date = date, Status = status, Gym = trained, Diet = dietPercent == 100, WorkoutCompletion = trained ? Pick(completion, 100) : status == Attendance.Missed ? 0 : null, DietCompletion = dietPercent, RoutineId = selectedRoutine?.Id, PerformedExercises = selectedRoutine == null ? [] : exerciseChecks.Where(x => x.Check.IsChecked == true).Select(x => x.Name).ToList(), Workout = trained ? workout.Text?.Trim() ?? "" : "", Minutes = trained ? (int)Value(minutes) : 0, Steps = (int)Value(steps), Water = Value(water), Sleep = Value(sleep), Energy = Pick(energy, entry.Energy), Notes = notes.Text?.Trim() ?? "" });
-        });
+        }, "Check-in saved");
         await dialog.ShowDialog(this);
     }
     private async Task EditWeight(WeightEntry? entry = null, DateOnly? initialDate = null, Window? owner = null)
@@ -98,7 +98,7 @@ public sealed partial class MainWindow
         var date = DatePicker(entry?.Date ?? initialDate ?? Today); date.IsEnabled = entry == null;
         var number = Number(DisplayWeight(entry?.Kilograms ?? Weights.LastOrDefault()?.Kilograms ?? 80), DisplayWeight(20), DisplayWeight(500), .1); number.Name = "WeightValue";
         form.Children.Add(Field("Date", date)); form.Children.Add(Field($"Weight · {(Pref.Pounds ? "lb" : "kg")}", number));
-        EditorContent(dialog, form, () => { var d = Selected(date); _repository.Save("weight", d.ToString("yyyy-MM-dd"), new WeightEntry(d, ToKg(Value(number)))); });
+        EditorContent(dialog, form, () => { var d = Selected(date); _repository.Save("weight", d.ToString("yyyy-MM-dd"), new WeightEntry(d, ToKg(Value(number)))); }, "Weight saved");
         await dialog.ShowDialog(owner ?? this);
     }
     private async Task EditMeasurement(Measurement? entry = null)
@@ -107,6 +107,6 @@ public sealed partial class MainWindow
         var date = DatePicker(entry?.Date ?? Today); date.IsEnabled = entry == null; var unit = Pref.Inches ? "in" : "cm"; double factor = Pref.Inches ? 2.54 : 1;
         var waist = Number((entry?.Waist ?? 80) / factor, 1 / factor, 500 / factor, .1); var chest = Number((entry?.Chest ?? 95) / factor, 1 / factor, 500 / factor, .1); var hips = Number((entry?.Hips ?? 95) / factor, 1 / factor, 500 / factor, .1);
         form.Children.Add(Field("Date", date)); form.Children.Add(Field($"Waist · {unit}", waist)); form.Children.Add(Field($"Chest · {unit}", chest)); form.Children.Add(Field($"Hips · {unit}", hips));
-        EditorContent(dialog, form, () => { var d = Selected(date); _repository.Save("measurement", d.ToString("yyyy-MM-dd"), new Measurement(d, Value(waist) * factor, Value(chest) * factor, Value(hips) * factor)); }); await dialog.ShowDialog(this);
+        EditorContent(dialog, form, () => { var d = Selected(date); _repository.Save("measurement", d.ToString("yyyy-MM-dd"), new Measurement(d, Value(waist) * factor, Value(chest) * factor, Value(hips) * factor)); }, "Measurement saved"); await dialog.ShowDialog(this);
     }
 }
