@@ -183,7 +183,7 @@ public sealed class UiTests
         Assert.Equal(new DateOnly(2026, 9, 25), plan.CreatedOn); Assert.Equal(2, plan.Meals.Count);
         Assert.Equal(2, plan.Meals[0].Ingredients.Count); Assert.Equal("Milk", plan.Meals[0].Ingredients[1].Name);
         Assert.Equal(MealUnit.Tablespoons, plan.Meals[1].Unit);
-        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), x => x.Text?.Contains("25 Sep 2026") == true);
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), x => x.Text?.StartsWith("Created on 25 September 2026") == true);
         Capture(window, "nutrition-schedule");
         Click(Named<Button>(window, "EditNutritionPlan")); dialog = Assert.Single(window.OwnedWindows);
         Named<TextBox>(dialog, "NutritionCourse").Text = "Updated course";
